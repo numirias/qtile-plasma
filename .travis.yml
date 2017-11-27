@@ -3,7 +3,7 @@ python:
     - "3.6"
 install:
     - pip install pipenv --upgrade
-    - pipenv install --dev --skip-lock
+    - pipenv install --sequential --dev --skip-lock
 script:
     - pipenv run pytest --cov plasma tests/
     - pipenv run codecov
