@@ -7,8 +7,14 @@ name = "pypi"
 
 [packages]
 
+cffi = "*"
+xcffib = "*"
+cairocffi = "*"
+qtile = "*"
 
 
 [dev-packages]
 
 pytest = "*"
+pytest-cov = "*"
+codecov = "*"
