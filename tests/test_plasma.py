@@ -1,4 +1,4 @@
-from pytest import fixture
+from pytest import fixture, approx
 
 from plasma.debug import draw, tree, info
 from plasma.node import Node, VERTICAL, HORIZONTAL
@@ -101,6 +101,15 @@ class TestPlasma:
         assert root.tree == [a, f, [b, g, [c, d, e]]]
         d.parent.add_child_after(h, d)
         assert root.tree == [a, f, [b, g, [c, d, h, e]]]
+
+    def test_add_child_after_with_sizes(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        a.grow(10)
+        b.grow(10)
+        b.parent.add_child_after(c, b)
+        assert a.size == b.size == c.size == 40
 
     def test_remove_child(self, root):
         a, b = Nodes('a b')
@@ -262,35 +271,114 @@ class TestPlasma:
         assert a.size == a.width == 60
         assert b.size == b.height == 25
 
+    def test_capacity(self, root, grid):
+        a, b, c, d, e = grid
+        assert root.capacity == 120
+        assert b.parent.capacity == 50
+        assert c.parent.capacity == 60
+        assert c.capacity == 25
+
+    def test_capacity2(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        b.split_with(c)
+
     def test_resize(self, root, grid):
         a, b, c, d, e = grid
-        a.grow(30)
-        assert a.width == a.size == 90
+        a.grow(10)
+        assert a.width == a.size == 70
         assert b.height == b.size == 25
-        assert b.width == 30
-        assert c.width == d.width == e.width == 10
+        assert b.width == 50
+        assert c.width == d.width == e.width == 50/3
         assert a.pos == (0, 0)
-        assert b.pos == (90, 0)
-        assert c.pos == (90, 25)
-        assert d.pos == (100, 25)
-        assert e.pos == (110, 25)
+        assert b.pos == (70, 0)
+        assert c.pos == (70, 25)
+        assert d.pos == (70 + 50/3, 25)
+        assert e.pos == (70 + (50/3)*2, 25)
         b.grow(-5)
-        assert c.width == d.width == e.width == 10
+        assert c.width == d.width == e.width == 50/3
         assert c.height == d.height == e.height == 30
         d.grow(5)
-        assert d.width == 15
+        assert d.width == 50/3 + 5
         d.move_up()
         assert d.size == (50 - b.size) / 2
         b.integrate(VERTICAL, 1)
-        assert b.size == d.size == 15
+        assert b.size == d.size == 25
         assert b.parent.size == 25
-        # TODO Cap maximum sizes
-        # TODO Don't allow total sizes smaller than root
+
+    def test_resize_absolute(self, root, grid):
+        a, b, c, d, e = grid
+        b.size = 10
+        assert b.size == b.height == 10
+        assert c.parent.size == 40
+        b.size = 5
+        assert b.size == 10
+
+    def test_resize_absolute_and_relative(self, root):
+        a, b, c, d = Nodes('a b c d')
+        root.add_child(a)
+        root.add_child(b)
+        a.size = 20
+        b.size = 20
+        assert a.size == 100
+        assert b.size == 20
+        root.add_child(c)
+        assert c.size == 40
+        assert a.size == approx(100 * (2/3))
+        assert b.size == approx(20 * (2/3))
+        root.add_child(d)
+        assert c.size == d.size == 20
 
     def test_resize_minimum(self, root, grid):
         a, b, c, d, e = grid
         b.grow(-100)
         assert b.size == 10
+
+    def test_resize_all_absolute_underflow(self, root, grid):
+        a, b, c, d, e = grid
+        c.size = 10
+        d.size = 10
+        assert e.size == 40
+        e.size = 10
+        assert e.size == 10
+        assert c.size == d.size == 25
+
+    def test_resize_all_absolute_overflow(self, root, grid):
+        a, b, c, d, e = grid
+        c.size = d.size = 15
+        e.size = 40
+        assert e.size == 40
+        assert c.size == d.size == 10
+        e.size = 50
+        assert e.size == 40
+        assert c.size == d.size == 10
+
+    def test_resize_overflow_with_relative(self, root, grid):
+        a, b, c, d, e = grid
+        c.size = 20
+        d.size = 40
+        assert c.size == 10
+        assert d.size == 40
+        assert e.size == 10
+        assert e.autosized
+        d.size = 50
+        assert c.size == 10
+        assert d.size == 40
+        assert e.size == 10
+        assert e.autosized
+
+    def test_resize_only_absolute_remains(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        a.size = 20
+        b.size = 20
+        root.add_child(c)
+        root.remove_child(c)
+        info(root)
+        assert a.size == 100
+        assert b.size == 20
 
     def test_reset_size(self, grid):
         a, b, c, d, e = grid
@@ -309,6 +397,19 @@ class TestPlasma:
         assert b.size == c.size == 25
         b.remove()
         assert c.size == 40
+
+    def test_only_child_must_be_autosized(self, root):
+        a, b = Nodes('a b')
+        root.add_child(a)
+        root.add_child(b)
+        a.size = 10
+        root.remove_child(b)
+        assert a.autosized
+
+
+    def test_deny_only_child_resize(self, root):
+        pass
+        # TODO
 
     def test_resize_parents(self, root):
         a, b, c = Nodes('a b c')

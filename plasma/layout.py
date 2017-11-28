@@ -14,7 +14,9 @@ class Plasma(Layout):
         # TODO Which options do we need?
         ('name', 'Plasma', 'Name of this layout.'),
         ('border_focus', '#ff0000', 'Border colour for the focused window.'),
-        ('border_normal', "#000000", 'Border colour for un-focused winows.'),
+        ('border_normal', '#000000', 'Border colour for un-focused winows.'),
+        ('border_normal_sized', '#b75500', ''),
+        ('border_focus_sized', '#ff7700', ''),
         ('border_width', 2, 'Border width.'),
         ('single_border_width', None, 'Border width for single window'),
         ('margin', 0, 'Margin of the layout.'),
@@ -68,8 +70,24 @@ class Plasma(Layout):
         c.focused = None
         return c
 
+    def border_color(self, client):
+        node = self.root.find_payload(client)
+        if client is self.focused:
+            if node.autosized:
+                color = self.border_focus
+            else:
+                color = self.border_focus_sized
+        else:
+            if node.autosized:
+                color = self.border_normal
+            else:
+                color = self.border_normal_sized
+        color_pixel = self.group.qtile.colorPixel(color)
+        return color_pixel
+
+
     def configure(self, client, screen):
-        logger.error('ohai, configure %s %s' % (client, screen))
+        logger.error('CONFIGURE %s %s' % (client, screen))
         self.root._x = screen.x
         self.root._y = screen.y
         self.root._width = screen.width
@@ -77,13 +95,12 @@ class Plasma(Layout):
 
         node = self.root.find_payload(client)
 
-        color = self.border_focus if client is self.focused else self.border_normal
-        border_color_pixel = self.group.qtile.colorPixel(color)
-
         if len(self.root.children) == 1 and self.root.children[0].is_leaf:
             border_width = 0
         else:
             border_width = self.single_border_width
+
+        logger.error('dimensions %s %s %s %s' % (node.x, node.y, node.width, node.height))
 
         client.place( # XXX Int conversions should happen in Node() not here
             int(node.x),
@@ -91,7 +108,7 @@ class Plasma(Layout):
             int(node.width)-2,
             int(node.height)-2,
             border_width,
-            border_color_pixel,
+            self.border_color(client),
             margin=self.margin,
         )
         client.unhide()

@@ -4,7 +4,7 @@ VERTICAL = True
 
 class Node:
 
-    def __init__(self, payload=None, x=None, y=None, width=None, height=None, default_orient=HORIZONTAL, children=None, parent=None):
+    def __init__(self, payload=None, x=None, y=None, width=None, height=None, default_orient=HORIZONTAL, parent=None):
         self._x = x
         self._y = y
         self._width = width
@@ -15,9 +15,6 @@ class Node:
         self.payload = payload
         self.parent = parent
         self.children = []
-        if children:
-            for child in children:
-                self.add_child(child)
 
     def __repr__(self):
         if self.payload is None:
@@ -25,37 +22,6 @@ class Node:
         else:
             info = self.payload
         return '<Node %s %x>' % (info, id(self))
-
-    @property
-    def autosized(self):
-        return self._size is None
-
-    @property
-    def width(self):
-        if self.is_root:
-            return self._width
-        if self.parent.vertical:
-            return self.parent.width
-        return self.rel_size
-
-    @property
-    def height(self):
-        if self.is_root:
-            return self._height
-        if self.parent.horizontal:
-            return self.parent.height
-        return self.rel_size
-
-    @property
-    def rel_size(self):
-        if not self.autosized:
-            return self._size
-        if self.parent.horizontal:
-            available = self.parent.width
-        else:
-            available = self.parent.height
-        space = available - sum(c.size for c in self.siblings if not c.autosized)
-        return space / len([c for c in self.parent.children if c.autosized])
 
     @property
     def x(self):
@@ -78,6 +44,67 @@ class Node:
         return (self.x, self.y)
 
     @property
+    def width(self):
+        if self.is_root:
+            return self._width
+        if self.parent.vertical:
+            return self.parent.width
+        return self.rel_size
+
+    @property
+    def height(self):
+        if self.is_root:
+            return self._height
+        if self.parent.horizontal:
+            return self.parent.height
+        return self.rel_size
+
+    @property
+    def capacity(self):
+        return self.width if self.horizontal else self.height
+
+    @property
+    def size(self):
+        return self.width if self.vertical else self.height
+
+    @size.setter
+    def size(self, val):
+        # TODO Simplify
+        val = max(10, val)
+        max_take = self.parent.capacity - 10 * len(self.siblings)
+        val = min(max_take, val)
+        sized_siblings = [c for c in self.siblings if not c.autosized]
+        autosized_siblings = [c for c in self.siblings if c.autosized]
+
+        space_to_fill = self.parent.capacity - (10 * len(autosized_siblings)) - val - sum(c.size for c in sized_siblings)
+
+        if space_to_fill < sum(c.size for c in sized_siblings) or all(not c.autosized for c in self.siblings):
+            for sibling in sized_siblings:
+                sibling._size += space_to_fill / len(sized_siblings)
+        self._size = val
+
+    @property
+    def autosized(self):
+        return self._size is None
+
+    @property
+    def rel_size(self):
+        if not self.autosized:
+            return self._size
+        if self.parent.horizontal:
+            available = self.parent.width
+        else:
+            available = self.parent.height
+        space = available - sum(c.size for c in self.siblings if not c.autosized)
+        return space / len([c for c in self.parent.children if c.autosized])
+
+    def grow(self, amt, orient=None):
+        if orient is (not self.parent.orient):
+            self.parent.grow(amt)
+            return
+        self.size = self.size + amt
+
+    @property
     def has_parent(self):
         return self.parent is not None
 
@@ -87,11 +114,7 @@ class Node:
 
     @property
     def siblings(self):
-        return [child for child in self.parent.children if child is not self]
-
-    @property
-    def size(self):
-        return self.width if self.vertical else self.height
+        return [c for c in self.parent.children if c is not self]
 
     @property
     def is_root(self):
@@ -189,18 +212,37 @@ class Node:
         else:
             return self.parent.neighbor(orient, direction)
 
-    def add_child(self, node):
-        self.children.append(node)
+    def add_child(self, node, idx=None):
+        # If has children and each child has absolute size...
+        if not self.is_leaf and all(not c.autosized for c in self.children):
+            num = len(self.children)
+            # ...shrink each child to make space for new child.
+            for child in self.children:
+                child._size /= (num + 1) / num
+        if idx is None:
+            idx = len(self.children)
+        self.children.insert(idx, node)
         node.parent = self
 
     def add_child_after(self, new, old):
-        self.children.insert(self.children.index(old)+1, new)
-        new.parent = self
+        self.add_child(new, idx=self.children.index(old)+1)
 
     def remove_child(self, node):
         self.children.remove(node)
-        if not self.is_root and len(self.children) == 1:
-            self.parent.replace_child(self, self.children[0])
+        if len(self.children) == 1:
+            if not self.is_root:
+                # Collapse tree with a single child
+                self.parent.replace_child(self, self.children[0])
+            else:
+                # A single child doesn't need an absolute size
+                self.children[0].reset_size()
+            return
+        # If no autosized children are there to fill empty space...
+        if all([not c.autosized for c in self.children]):
+            # ...enlarge all children to fill the void.
+            factor = self.capacity / sum([c.size for c in self.children])
+            for child in self.children:
+                child._size *= factor
 
     def remove(self):
         self.parent.remove_child(self)
@@ -216,9 +258,11 @@ class Node:
 
     def split_with(self, node):
         original_parent = self.parent
-        container = Node(children=[self, node])
+        container = Node()
         original_parent.replace_child(self, container)
         self.reset_size()
+        for child in [self, node]:
+            container.add_child(child)
 
     def move(self, orient, direction=1):
         if orient == self.parent.orient:
@@ -237,13 +281,6 @@ class Node:
             self.parent.remove_child(self)
             offset = 1 if direction == 1 else 0
             pparent.insert_child(target_idx + offset, self)
-
-    def grow(self, amt, orient=None):
-        if orient is (not self.parent.orient):
-            self.parent.grow(amt)
-            return
-        new_size = max(self.size + amt, 10)
-        self._size = new_size
 
     def move_left(self):
         self.move(HORIZONTAL, -1)
