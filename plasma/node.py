@@ -70,6 +70,8 @@ class Node:
     @size.setter
     def size(self, val):
         # TODO Simplify
+        if len(self.siblings) == 0:
+            return
         val = max(10, val)
         max_take = self.parent.capacity - 10 * len(self.siblings)
         val = min(max_take, val)

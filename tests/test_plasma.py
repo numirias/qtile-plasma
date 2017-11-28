@@ -406,10 +406,11 @@ class TestPlasma:
         root.remove_child(b)
         assert a.autosized
 
-
     def test_deny_only_child_resize(self, root):
-        pass
-        # TODO
+        a = Node('a')
+        root.add_child(a)
+        a.size = 10
+        assert a.size == 120
 
     def test_resize_parents(self, root):
         a, b, c = Nodes('a b c')
