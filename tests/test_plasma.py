@@ -112,6 +112,8 @@ class TestPlasma:
         root.add_child(b)
         root.remove_child(a)
         assert root.children == [b]
+        root.remove_child(b)
+        assert root.children == []
 
     def test_nested(self, root):
         a, b, c, d = Nodes('a b c d')

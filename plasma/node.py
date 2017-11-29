@@ -204,7 +204,7 @@ class Node:
         if orient is (not self.parent.orient):
             self.parent.grow(amt)
             return
-        self.size = self.size + amt
+        self.size += amt
 
     def access(self):
         self.parent.last_accessed = self
@@ -238,6 +238,9 @@ class Node:
 
     def remove_child(self, node):
         self.children.remove(node)
+        if len(self.children) == 0:
+            assert self.is_root
+            return
         if len(self.children) == 1:
             if not self.is_root:
                 # Collapse tree with a single child
