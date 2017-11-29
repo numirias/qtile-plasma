@@ -261,10 +261,6 @@ class Node:
         new.parent = self
         new._size = old._size
 
-    def insert_child(self, idx, node):
-        self.children.insert(idx, node)
-        node.parent = self
-
     def split_with(self, node):
         original_parent = self.parent
         container = Node()
@@ -274,22 +270,25 @@ class Node:
             container.add_child(child)
 
     def move(self, orient, direction=1):
-        if orient == self.parent.orient:
-            old_idx = self.parent.children.index(self)
-            new_idx = old_idx + direction
-            if new_idx < 0 or new_idx >= len(self.parent.children):
-                return
-            ch = self.parent.children
-            ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
-        else:
-            self.reset_size()
-            pparent = self.parent.parent
-            if pparent is None:
-                return
-            target_idx = pparent.children.index(self.parent)
-            self.parent.remove_child(self)
-            offset = 1 if direction == 1 else 0
-            pparent.insert_child(target_idx + offset, self)
+        try:
+            if orient == self.parent.orient:
+                old_idx = self.parent.children.index(self)
+                new_idx = old_idx + direction
+                if 0 <= new_idx < len(self.parent.children):
+                    ch = self.parent.children
+                    ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
+                    return
+                new_sibling = self.parent.parent
+            else:
+                new_sibling = self.parent
+            new_parent = new_sibling.parent
+            idx = new_parent.children.index(new_sibling)
+        except AttributeError as e:
+            return
+        self.reset_size()
+        self.parent.remove_child(self)
+        offset = 1 if direction == 1 else 0
+        new_parent.add_child(self, idx + offset)
 
     def move_left(self):
         self.move(HORIZONTAL, -1)

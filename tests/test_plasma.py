@@ -101,15 +101,10 @@ class TestPlasma:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        info(root)
         a.grow(10)
-        info(root)
         b.grow(10)
-        info(root)
         b.parent.add_child_after(c, b)
-        info(root)
         assert a.size == b.size == c.size == 40
-        info(root)
 
     def test_remove_child(self, root):
         a, b = Nodes('a b')
@@ -180,12 +175,12 @@ class TestPlasma:
         assert c.prev_leaf == b
         assert b.prev_leaf == a
 
-    def test_siblings(self, root, grid):
+    def test_siblings(self, grid):
         a, b, c, d, e = grid
         assert d.siblings == [c, e]
         assert b.siblings == [c.parent]
 
-    def test_simple_moving(self, grid):
+    def test_moving_forward(self, root, grid):
         a, b, c, d, e = grid
         assert c.parent.children == [c, d, e]
         c.move_right()
@@ -193,13 +188,16 @@ class TestPlasma:
         c.move_right()
         assert c.parent.children == [d, e, c]
         c.move_right()
-        assert c.parent.children == [d, e, c]
-        c.move_left()
-        assert c.parent.children == [d, c, e]
-        c.move_left()
-        assert c.parent.children == [c, d, e]
-        c.move_left()
-        assert c.parent.children == [c, d, e]
+        assert root.tree == [a, [b, [d, e]], c]
+
+    def test_moving_backward(self, root, grid):
+        a, b, c, d, e = grid
+        e.move_left()
+        assert c.parent.children == [c, e, d]
+        e.move_left()
+        assert c.parent.children == [e, c, d]
+        e.move_left()
+        assert root.tree == [a, e, [b, [c, d]]]
 
     def test_advanced_moving(self, grid):
         a, b, c, d, e = grid
@@ -223,9 +221,14 @@ class TestPlasma:
         d.move_right()
         assert root.tree == [a, e, [b, c], d]
 
-    def test_advanced_moving3(self, root, grid):
-        # TODO c should be able to move left
-        pass
+    def test_moving_blocked(self, root, grid):
+        a, b, c, d, e = grid
+        original_tree = root.tree
+        a.move_up()
+        assert root.tree == original_tree
+        b.move_up()
+        assert root.tree == original_tree
+        b.move_right()
 
     def test_integrate(self, root, grid):
         a, b, c, d, e = grid
