@@ -262,51 +262,60 @@ class Node:
         new._size = old._size
 
     def split_with(self, node):
-        original_parent = self.parent
         container = Node()
-        original_parent.replace_child(self, container)
+        self.parent.replace_child(self, container)
         self.reset_size()
         for child in [self, node]:
             container.add_child(child)
 
     def move(self, orient, direction=1):
+        if self.is_root:
+            return
+        if orient == self.parent.orient:
+            old_idx = self.parent.children.index(self)
+            new_idx = old_idx + direction
+            if 0 <= new_idx < len(self.parent.children):
+                ch = self.parent.children
+                ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
+                return
+            new_sibling = self.parent.parent
+        else:
+            new_sibling = self.parent
         try:
-            if orient == self.parent.orient:
-                old_idx = self.parent.children.index(self)
-                new_idx = old_idx + direction
-                if 0 <= new_idx < len(self.parent.children):
-                    ch = self.parent.children
-                    ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
-                    return
-                new_sibling = self.parent.parent
-            else:
-                new_sibling = self.parent
             new_parent = new_sibling.parent
             idx = new_parent.children.index(new_sibling)
-        except AttributeError as e:
+        except AttributeError:
             return
         self.reset_size()
         self.parent.remove_child(self)
         offset = 1 if direction == 1 else 0
         new_parent.add_child(self, idx + offset)
 
-    def move_left(self):
-        self.move(HORIZONTAL, -1)
-
     def move_up(self):
         self.move(VERTICAL, -1)
-
-    def move_right(self):
-        self.move(HORIZONTAL, 1)
 
     def move_down(self):
         self.move(VERTICAL, 1)
 
-    def integrate(self, orient, direction=1):
+    def move_right(self):
+        self.move(HORIZONTAL, 1)
+
+    def move_left(self):
+        self.move(HORIZONTAL, -1)
+
+    def _move_and_integrate(self, orient, direction):
+        old_parent = self.parent
+        self.move(orient, direction)
+        if self.parent is not old_parent:
+            self.integrate(orient, direction)
+
+    def integrate(self, orient, direction):
         if orient != self.parent.orient:
+            self._move_and_integrate(orient, direction)
             return
         target_idx = self.parent.children.index(self) + direction
         if target_idx < 0 or target_idx >= len(self.parent.children):
+            self._move_and_integrate(orient, direction)
             return
         self.reset_size()
         target = self.parent.children[target_idx]
@@ -315,6 +324,18 @@ class Node:
             target.split_with(self)
         else:
             target.add_child(self)
+
+    def integrate_up(self):
+        self.integrate(VERTICAL, -1)
+
+    def integrate_down(self):
+        self.integrate(VERTICAL, 1)
+
+    def integrate_left(self):
+        self.integrate(HORIZONTAL, -1)
+
+    def integrate_right(self):
+        self.integrate(HORIZONTAL, 1)
 
     def find_payload(self, payload):
         if self.payload is payload:

@@ -180,7 +180,7 @@ class TestPlasma:
         assert d.siblings == [c, e]
         assert b.siblings == [c.parent]
 
-    def test_moving_forward(self, root, grid):
+    def test_move_forward(self, root, grid):
         a, b, c, d, e = grid
         assert c.parent.children == [c, d, e]
         c.move_right()
@@ -190,7 +190,7 @@ class TestPlasma:
         c.move_right()
         assert root.tree == [a, [b, [d, e]], c]
 
-    def test_moving_backward(self, root, grid):
+    def test_move_backward(self, root, grid):
         a, b, c, d, e = grid
         e.move_left()
         assert c.parent.children == [c, e, d]
@@ -199,14 +199,14 @@ class TestPlasma:
         e.move_left()
         assert root.tree == [a, e, [b, [c, d]]]
 
-    def test_advanced_moving(self, grid):
+    def test_advanced_move(self, grid):
         a, b, c, d, e = grid
         c.move_up()
         assert b.parent.tree == [b, c, [d, e]]
         a.move_up()
         assert b.parent.tree == [b, c, [d, e]]
 
-    def test_advanced_moving2(self, root, grid):
+    def test_advanced_move2(self, root, grid):
         a, b, c, d, e = grid
         c.move_down()
         assert b.parent.tree == [b, [d, e], c]
@@ -221,35 +221,86 @@ class TestPlasma:
         d.move_right()
         assert root.tree == [a, e, [b, c], d]
 
-    def test_moving_blocked(self, root, grid):
+    def test_move_blocked(self, root, grid):
         a, b, c, d, e = grid
-        original_tree = root.tree
+        orig_tree = root.tree.copy()
         a.move_up()
-        assert root.tree == original_tree
+        assert root.tree == orig_tree
         b.move_up()
-        assert root.tree == original_tree
+        assert root.tree == orig_tree
         b.move_right()
 
-    def test_integrate(self, root, grid):
+    def test_move_root(self, root):
+        a = Node('a')
+        root.add_child(a)
+        root.move_up()
+        assert root.tree == [a]
+
+    def test_integrate(self, root):
+        a, b, c, d, e = Nodes('a b c d e')
+        root.add_child(a)
+        root.add_child(b)
+        root.add_child(c)
+        root.add_child(d)
+        c.integrate_left()
+        assert root.tree == [a, [b, c], d]
+        a.integrate_right()
+        assert root.tree == [[b, c, a], d]
+        a.parent.add_child(e)
+        c.integrate_down()
+        assert root.tree == [[b, [a, c], e], d]
+        e.integrate_up()
+        assert root.tree == [[b, [a, c, e]], d]
+
+    def test_integrate_nested(self, root, grid):
         a, b, c, d, e = grid
-        c.integrate(HORIZONTAL, -1)
-        assert b.parent.tree == [b, [c, d, e]]
-        c.integrate(VERTICAL, 1)
-        assert b.parent.tree == [b, [c, d, e]]
-        c.integrate(VERTICAL, -1)
-        assert b.parent.tree == [b, [c, d, e]]
-        c.integrate(HORIZONTAL, 1)
-        assert b.parent.tree == [b, [[d, c], e]]
+        c.integrate_right()
+        assert root.tree == [a, [b, [[d, c], e]]]
+
+    def test_move_and_integrate(self, root, grid):
+        a, b, c, d, e = grid
+        c.integrate_left()
+        assert root.tree == [[a, c], [b, [d, e]]]
+        a.integrate_right()
+        assert root.tree == [c, [b, [d, e], a]]
+        d.integrate_down()
+        assert root.tree == [c, [b, e, [a, d]]]
+        a.integrate_up()
+        assert root.tree == [c, [b, [e, a], d]]
+        e.integrate_left()
+        assert root.tree == [[c, e], [b, a, d]]
         f = Node('f')
-        e.parent.add_child(f)
-        e.integrate(HORIZONTAL, -1)
-        assert b.parent.tree == [b, [[d, c, e], f]]
-        f.integrate(HORIZONTAL, -1)
-        assert root.tree == [a, [b, [d, c, e, f]]]
-        b.integrate(VERTICAL, 1)
-        assert root.tree == [a, [d, c, e, f, b]]
-        a.integrate(HORIZONTAL, 1)
-        assert root.tree == [[d, c, e, f, b, a]]
+        a.split_with(f)
+        g = Node('g')
+        a.split_with(g)
+        g.integrate_left()
+        assert root.tree == [[c, e, g], [b, [a, f], d]]
+
+    def test_impossible_integrate(self, root, grid):
+        a, b, c, d, e = grid
+        orig_tree = root.tree.copy()
+        a.integrate_left()
+        assert orig_tree == root.tree
+        b.integrate_up()
+        assert orig_tree == root.tree
+
+    def test_impossible_integrate2(self, root):
+        a, b = Nodes('a b')
+        root.add_child(a)
+        root.add_child(b)
+        orig_tree = root.tree.copy()
+        b.integrate_up()
+        assert root.tree == orig_tree
+        b.integrate_down()
+        assert root.tree == orig_tree
+        b.integrate_right()
+        assert root.tree == orig_tree
+        a.integrate_up()
+        assert root.tree == orig_tree
+        a.integrate_down()
+        assert root.tree == orig_tree
+        a.integrate_left()
+        assert root.tree == orig_tree
 
     def test_find_payload(self, root, grid):
         a, b, c, d, e = grid
@@ -306,7 +357,7 @@ class TestPlasma:
         assert d.width == 50/3 + 5
         d.move_up()
         assert d.size == (50 - b.size) / 2
-        b.integrate(VERTICAL, 1)
+        b.integrate_down()
         assert b.size == d.size == 25
         assert b.parent.size == 25
 

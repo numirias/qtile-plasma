@@ -15,8 +15,8 @@ class Plasma(Layout):
         ('name', 'Plasma', 'Name of this layout.'),
         ('border_focus', '#ff0000', 'Border colour for the focused window.'),
         ('border_normal', '#000000', 'Border colour for un-focused winows.'),
-        ('border_normal_sized', '#b75500', ''),
-        ('border_focus_sized', '#ff7700', ''),
+        ('border_normal_fixed', '#b75500', ''),
+        ('border_focus_fixed', '#ff7700', ''),
         ('border_width', 2, 'Border width.'),
         ('single_border_width', None, 'Border width for single window'),
         ('margin', 0, 'Margin of the layout.'),
@@ -76,12 +76,12 @@ class Plasma(Layout):
             if node.flexible:
                 color = self.border_focus
             else:
-                color = self.border_focus_sized
+                color = self.border_focus_fixed
         else:
             if node.flexible:
                 color = self.border_normal
             else:
-                color = self.border_normal_sized
+                color = self.border_normal_fixed
         color_pixel = self.group.qtile.colorPixel(color)
         return color_pixel
 
