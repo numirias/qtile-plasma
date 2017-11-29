@@ -1,6 +1,7 @@
 from pytest import fixture
 
 from plasma import Plasma
+from plasma.node import Node
 
 
 @fixture
@@ -12,6 +13,7 @@ class TestLayout:
 
     def test_init(self):
         layout = Plasma()
+        assert type(layout.root) == Node
 
     def test_add(self, layout):
         layout.add('x')

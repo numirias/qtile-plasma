@@ -55,6 +55,7 @@ class TestPlasma:
         assert n.orient == HORIZONTAL
         assert n.horizontal is True
         assert n.vertical is False
+        assert n.size is None
         assert (n.x, n.y) == n.pos
 
     def test_add_child(self, root):
@@ -83,12 +84,6 @@ class TestPlasma:
         assert a.pos == (0, 0)
         assert b.pos == (40, 0)
         assert c.pos == (80, 0)
-        root._default_orient = VERTICAL
-        assert a.width == b.width == c.width == 120
-        assert a.height == b.height == c.height == 50/3
-        assert a.pos == (0, 0)
-        assert b.pos == (0, 50/3)
-        assert c.pos == (0, 50/3*2)
 
     def test_add_child_after(self, root, grid):
         a, b, c, d, e = grid
@@ -106,10 +101,15 @@ class TestPlasma:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
+        info(root)
         a.grow(10)
+        info(root)
         b.grow(10)
+        info(root)
         b.parent.add_child_after(c, b)
+        info(root)
         assert a.size == b.size == c.size == 40
+        info(root)
 
     def test_remove_child(self, root):
         a, b = Nodes('a b')
@@ -169,16 +169,16 @@ class TestPlasma:
 
     def test_prev_next(self, grid):
         a, b, c, d, e = grid
-        assert a.next == b
-        assert b.next == c
-        assert c.next == d
-        assert d.next == e
-        assert e.next == a
-        assert a.prev == e
-        assert e.prev == d
-        assert d.prev == c
-        assert c.prev == b
-        assert b.prev == a
+        assert a.next_leaf == b
+        assert b.next_leaf == c
+        assert c.next_leaf == d
+        assert d.next_leaf == e
+        assert e.next_leaf == a
+        assert a.prev_leaf == e
+        assert e.prev_leaf == d
+        assert d.prev_leaf == c
+        assert c.prev_leaf == b
+        assert b.prev_leaf == a
 
     def test_siblings(self, root, grid):
         a, b, c, d, e = grid
@@ -201,7 +201,7 @@ class TestPlasma:
         c.move_left()
         assert c.parent.children == [c, d, e]
 
-    def test_advanced_moving(self, root, grid):
+    def test_advanced_moving(self, grid):
         a, b, c, d, e = grid
         c.move_up()
         assert b.parent.tree == [b, c, [d, e]]
@@ -255,7 +255,7 @@ class TestPlasma:
         assert root.find_payload('d') is d
         assert root.find_payload('x') is None
 
-    def test_last_access(self, root, grid):
+    def test_last_access(self, grid):
         a, b, c, d, e = grid
         f = Node('f')
         a.split_with(f)
@@ -307,13 +307,25 @@ class TestPlasma:
         assert b.size == d.size == 25
         assert b.parent.size == 25
 
-    def test_resize_absolute(self, root, grid):
+    def test_resize_absolute(self, grid):
         a, b, c, d, e = grid
         b.size = 10
         assert b.size == b.height == 10
         assert c.parent.size == 40
         b.size = 5
         assert b.size == 10
+
+    def test_resize_absolute2(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        root.add_child(c)
+        a.size = 30
+        b.size = 60
+        c.size = 40
+        assert a.size == 30 * (80/90)
+        assert b.size == 60 * (80/90)
+        assert c.size == 40
 
     def test_resize_absolute_and_relative(self, root):
         a, b, c, d = Nodes('a b c d')
@@ -330,12 +342,26 @@ class TestPlasma:
         root.add_child(d)
         assert c.size == d.size == 20
 
-    def test_resize_minimum(self, root, grid):
+    def test_resize_absolute_and_relative2(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        root.add_child(c)
+        a.grow(10)
+        assert a.size == 50
+        assert b.size == 35
+        assert c.size == 35
+        b.grow(10)
+        assert a.size == 50
+        assert b.size == 45
+        assert c.size == 25
+
+    def test_resize_minimum(self, grid):
         a, b, c, d, e = grid
         b.grow(-100)
         assert b.size == 10
 
-    def test_resize_all_absolute_underflow(self, root, grid):
+    def test_resize_all_absolute_underflow(self, grid):
         a, b, c, d, e = grid
         c.size = 10
         d.size = 10
@@ -344,7 +370,7 @@ class TestPlasma:
         assert e.size == 10
         assert c.size == d.size == 25
 
-    def test_resize_all_absolute_overflow(self, root, grid):
+    def test_resize_all_absolute_overflow(self, grid):
         a, b, c, d, e = grid
         c.size = d.size = 15
         e.size = 40
@@ -354,19 +380,19 @@ class TestPlasma:
         assert e.size == 40
         assert c.size == d.size == 10
 
-    def test_resize_overflow_with_relative(self, root, grid):
+    def test_resize_overflow_with_relative(self, grid):
         a, b, c, d, e = grid
         c.size = 20
         d.size = 40
         assert c.size == 10
         assert d.size == 40
         assert e.size == 10
-        assert e.autosized
+        assert e.flexible
         d.size = 50
         assert c.size == 10
         assert d.size == 40
         assert e.size == 10
-        assert e.autosized
+        assert e.flexible
 
     def test_resize_only_absolute_remains(self, root):
         a, b, c = Nodes('a b c')
@@ -376,7 +402,6 @@ class TestPlasma:
         b.size = 20
         root.add_child(c)
         root.remove_child(c)
-        info(root)
         assert a.size == 100
         assert b.size == 20
 
@@ -398,13 +423,13 @@ class TestPlasma:
         b.remove()
         assert c.size == 40
 
-    def test_only_child_must_be_autosized(self, root):
+    def test_only_child_must_be_flexible(self, root):
         a, b = Nodes('a b')
         root.add_child(a)
         root.add_child(b)
         a.size = 10
         root.remove_child(b)
-        assert a.autosized
+        assert a.flexible
 
     def test_deny_only_child_resize(self, root):
         a = Node('a')

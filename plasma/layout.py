@@ -73,12 +73,12 @@ class Plasma(Layout):
     def border_color(self, client):
         node = self.root.find_payload(client)
         if client is self.focused:
-            if node.autosized:
+            if node.flexible:
                 color = self.border_focus
             else:
                 color = self.border_focus_sized
         else:
-            if node.autosized:
+            if node.flexible:
                 color = self.border_normal
             else:
                 color = self.border_normal_sized
@@ -143,11 +143,11 @@ class Plasma(Layout):
         pass
 
     def cmd_next(self):
-        node = self.focused_node.prev
+        node = self.focused_node.prev_leaf
         self.focus_node(node)
 
     def cmd_previous(self):
-        node = self.focused_node.next
+        node = self.focused_node.next_leaf
         self.focus_node(node)
 
     def cmd_left(self):

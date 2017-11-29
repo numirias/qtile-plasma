@@ -48,7 +48,7 @@ def tree(node, level=0):
         orient='H' if node.horizontal else 'V',
         repr_='%s' % repr(node),
         pos='%g*%g@%g,%g' % (node.width, node.height, node.x, node.y),
-        size='%s%s' % (node.size, ' (auto)' if node.autosized else ''),
+        size='%s%s' % (node.size, ' (auto)' if node.flexible else ''),
         parent='p: %s' % node.parent,
     )
     for child in node.children:
