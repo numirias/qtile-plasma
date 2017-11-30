@@ -2,8 +2,10 @@ import math
 import logging
 import copy
 
+from xcffib.xproto import StackMode
 from libqtile.log_utils import logger
 from libqtile.layout.base import Layout
+
 from .node import Node, HORIZONTAL, VERTICAL
 
 
@@ -98,6 +100,7 @@ class Plasma(Layout):
             self.border_color(client),
             margin=self.margin,
         )
+        client.window.configure(stackmode=StackMode.Below)
         client.unhide()
 
     def focus_first(self):
