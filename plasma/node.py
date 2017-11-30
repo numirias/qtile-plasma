@@ -18,10 +18,9 @@ class Node:
         self.parent = None
 
     def __repr__(self):
-        if self.payload is None:
-            info = '+%d' % len(self.children)
-        else:
-            info = self.payload
+        info = self.payload or ''
+        if self.children:
+            info += ' +%d' % len(self.children)
         return '<Node %s %x>' % (info, id(self))
 
     @property
