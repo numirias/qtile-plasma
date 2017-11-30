@@ -54,14 +54,12 @@ class Plasma(Layout):
         self.root.find_payload(client).remove()
 
     def clone(self, group):
-        logger.error('CLONE')
-        # TODO How to clone properly?
-        c = copy.copy(self)
-        c.group = group
-        c.root = Node()
-        c.root.parent = None
-        c.focused = None
-        return c
+        clone = copy.copy(self)
+        clone.group = group
+        clone.root = Node()
+        clone.focused = None
+        clone.split_orientation = None
+        return clone
 
     def border_color(self, client):
         node = self.root.find_payload(client)
@@ -84,8 +82,6 @@ class Plasma(Layout):
         self.root._width = screen.width
         self.root._height = screen.height
         node = self.root.find_payload(client)
-        logger.error('CONFIGURE %s %s (%s:%s %s*%s' % \
-                     (client, screen, node.x, node.y, node.width, node.height))
         if len(self.root.children) == 1 and self.root.children[0].is_leaf:
             border_width = 0
         else:
