@@ -18,63 +18,38 @@ class Plasma(Layout):
         ('border_normal_fixed', '#111111', 'Unfocused fixed-size window border color'),
         ('border_focus_fixed', '#ee0000', 'Focused fixed-size window border color'),
         ('border_width', 2, 'Border width'),
-        ('single_border_width', None, 'Single window border width'),
+        ('border_width_single', 0, 'Border width for single window'),
         ('margin', 0, 'Layout margin'),
     ]
 
     def __init__(self, **config):
         super().__init__(**config)
         self.add_defaults(Plasma.defaults)
-        if self.single_border_width is None:
-            self.single_border_width = self.border_width
         self.root = Node()
         self.focused = None
-        self.split_orientation = None
-
-    @property
-    def focused_node(self):
-        return self.root.find_payload(self.focused)
-
-    def focus(self, client):
-        self.focused = client
-        self.root.find_payload(client).access()
-
-    def add(self, client):
-        node = Node(client)
-        if self.focused is None or self.focused_node is None:
-            self.root.add_child(node)
-            return
-        if self.split_orientation in (None, self.focused_node.parent.orient):
-            self.focused_node.parent.add_child_after(node, self.focused_node)
-        else:
-            self.focused_node.split_with(node)
-        self.split_orientation = None
-
-    def remove(self, client):
-        self.root.find_payload(client).remove()
+        self.split_orient = None
 
     def clone(self, group):
         clone = copy.copy(self)
         clone.group = group
         clone.root = Node()
         clone.focused = None
-        clone.split_orientation = None
+        clone.split_orient = None
         return clone
 
-    def border_color(self, client):
-        node = self.root.find_payload(client)
-        if client.has_focus:
-            if node.flexible:
-                color = self.border_focus
-            else:
-                color = self.border_focus_fixed
+    def add(self, client):
+        node = Node(client)
+        if self.focused is None or self.focused_node is None:
+            self.root.add_child(node)
+            return
+        if self.split_orient in (None, self.focused_node.parent.orient):
+            self.focused_node.parent.add_child_after(node, self.focused_node)
         else:
-            if node.flexible:
-                color = self.border_normal
-            else:
-                color = self.border_normal_fixed
-        color_pixel = self.group.qtile.colorPixel(color)
-        return color_pixel
+            self.focused_node.split_with(node)
+        self.split_orient = None
+
+    def remove(self, client):
+        self.root.find_payload(client).remove()
 
     def configure(self, client, screen):
         self.root._x = screen.x
@@ -82,22 +57,29 @@ class Plasma(Layout):
         self.root._width = screen.width
         self.root._height = screen.height
         node = self.root.find_payload(client)
-        if len(self.root.children) == 1 and self.root.children[0].is_leaf:
-            border_width = 0
-        else:
-            border_width = self.single_border_width
-         # TODO Convert to int inside Node, not here
+        border_width = \
+            self.border_width_single if self.root.tree == [node] else \
+            self.border_width
+        border_color = getattr(self, 'border_' + \
+            ('focus' if client.has_focus else 'normal') + \
+            ('' if node.flexible else '_fixed'))
         client.place(
+             # TODO Convert to int inside Node, not here
             int(node.x),
             int(node.y),
-            int(node.width)-2,
-            int(node.height)-2,
+            int(node.width)-2*border_width,
+            int(node.height)-2*border_width,
             border_width,
-            self.border_color(client),
+            self.group.qtile.colorPixel(border_color),
             margin=self.margin,
         )
+        # Always keep tiles below floating windows
         client.window.configure(stackmode=StackMode.Below)
         client.unhide()
+
+    def focus(self, client):
+        self.focused = client
+        self.root.find_payload(client).access()
 
     def focus_first(self):
         return self.root.first_leaf.payload
@@ -118,32 +100,30 @@ class Plasma(Layout):
             return
         self.group.focus(node.payload)
 
+    @property
+    def focused_node(self):
+        return self.root.find_payload(self.focused)
+
     def refocus(self):
         self.group.focus(self.focused)
 
     def cmd_next(self):
-        node = self.focused_node.prev_leaf
-        self.focus_node(node)
+        self.focus_node(self.focused_node.prev_leaf)
 
     def cmd_previous(self):
-        node = self.focused_node.next_leaf
-        self.focus_node(node)
+        self.focus_node(self.focused_node.next_leaf)
 
     def cmd_left(self):
-        node = self.focused_node.left
-        self.focus_node(node)
+        self.focus_node(self.focused_node.left)
 
     def cmd_right(self):
-        node = self.focused_node.right
-        self.focus_node(node)
+        self.focus_node(self.focused_node.right)
 
     def cmd_up(self):
-        node = self.focused_node.up
-        self.focus_node(node)
+        self.focus_node(self.focused_node.up)
 
     def cmd_down(self):
-        node = self.focused_node.down
-        self.focus_node(node)
+        self.focus_node(self.focused_node.down)
 
     def cmd_move_left(self):
         self.focused_node.move_left()
@@ -178,10 +158,10 @@ class Plasma(Layout):
         self.refocus()
 
     def cmd_split_horizontal(self):
-        self.split_orientation = HORIZONTAL
+        self.split_orient = HORIZONTAL
 
     def cmd_split_vertical(self):
-        self.split_orientation = VERTICAL
+        self.split_orient = VERTICAL
 
     def cmd_size(self, size):
         self.focused_node.size = size
