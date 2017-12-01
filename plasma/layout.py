@@ -114,6 +114,8 @@ class Plasma(Layout):
         return None if prev_leaf is self.root.last_leaf else prev_leaf.payload
 
     def focus_node(self, node):
+        if node is None:
+            return
         self.group.focus(node.payload)
 
     def refocus(self):
