@@ -13,11 +13,11 @@ class Plasma(Layout):
 
     defaults = [
         ('name', 'Plasma', 'Layout name'),
-        ('border_normal', '#000000', 'Unfocused window border color'),
-        ('border_focus', '#ff0000', 'Focused window border color'),
-        ('border_normal_fixed', '#111111', 'Unfocused fixed-size window border color'),
-        ('border_focus_fixed', '#ee0000', 'Focused fixed-size window border color'),
-        ('border_width', 2, 'Border width'),
+        ('border_normal', '#333333', 'Unfocused window border color'),
+        ('border_focus', '#00e891', 'Focused window border color'),
+        ('border_normal_fixed', '#333333', 'Unfocused fixed-size window border color'),
+        ('border_focus_fixed', '#00e8dc', 'Focused fixed-size window border color'),
+        ('border_width', 1, 'Border width'),
         ('border_width_single', 0, 'Border width for single window'),
         ('margin', 0, 'Layout margin'),
     ]
