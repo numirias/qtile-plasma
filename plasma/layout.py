@@ -63,12 +63,12 @@ class Plasma(Layout):
         border_color = getattr(self, 'border_' + \
             ('focus' if client.has_focus else 'normal') + \
             ('' if node.flexible else '_fixed'))
+        x, y, width, height = node.pixel_perfect
         client.place(
-             # TODO Convert to int inside Node, not here
-            int(node.x),
-            int(node.y),
-            int(node.width)-2*border_width,
-            int(node.height)-2*border_width,
+            x,
+            y,
+            width-2*border_width,
+            height-2*border_width,
             border_width,
             self.group.qtile.colorPixel(border_color),
             margin=self.margin,

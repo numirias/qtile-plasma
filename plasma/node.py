@@ -1,8 +1,11 @@
+from collections import namedtuple
+
 
 HORIZONTAL = False
 VERTICAL = True
 MIN_SIZE = 10
 ROOT_ORIENT = HORIZONTAL
+Dimensions = namedtuple('Dimensions', 'x y width height')
 
 class Node:
 
@@ -96,22 +99,6 @@ class Node:
         return [x.tree if x.children else x for x in self.children]
 
     @property
-    def up(self):
-        return self.neighbor(VERTICAL, -1)
-
-    @property
-    def down(self):
-        return self.neighbor(VERTICAL, 1)
-
-    @property
-    def left(self):
-        return self.neighbor(HORIZONTAL, -1)
-
-    @property
-    def right(self):
-        return self.neighbor(HORIZONTAL, 1)
-
-    @property
     def size_offset(self):
         return sum(c.size for c in self.parent.children[:self.index])
 
@@ -149,6 +136,19 @@ class Node:
         if self.vertical:
             return self.parent.height
         return self.size
+
+    @property
+    def pixel_perfect(self):
+        """Return pixel-perfect int dimensions (x, y, width, height) which
+        compensate for gaps in the layout grid caused by plain int conversion.
+        """
+        x, y, width, height = self.x, self.y, self.width, self.height
+        threshold = 0.99999
+        if (x - int(x)) + (width - int(width)) > threshold:
+            width += 1
+        if (y - int(y)) + (height - int(height)) > threshold:
+            height += 1
+        return Dimensions(*map(int, (x, y, width, height)))
 
     @property
     def capacity(self):
@@ -219,6 +219,22 @@ class Node:
                 return None
             return self.parent.parent.neighbor(orient, direction)
         return self.parent.neighbor(orient, direction)
+
+    @property
+    def up(self):
+        return self.neighbor(VERTICAL, -1)
+
+    @property
+    def down(self):
+        return self.neighbor(VERTICAL, 1)
+
+    @property
+    def left(self):
+        return self.neighbor(HORIZONTAL, -1)
+
+    @property
+    def right(self):
+        return self.neighbor(HORIZONTAL, 1)
 
     def add_child(self, node, idx=None):
         # If has children and each child has absolute size...

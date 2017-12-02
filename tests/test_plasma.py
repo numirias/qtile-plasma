@@ -36,6 +36,18 @@ def grid(root):
     c.parent.add_child(e)
     return a, b, c, d, e
 
+@fixture
+def complex_grid(root):
+    a, b, c, d, e, f, g = Nodes('a b c d e f g')
+    root.add_child(a)
+    root.add_child(b)
+    b.split_with(c)
+    c.split_with(d)
+    c.parent.add_child(e)
+    c.split_with(f)
+    f.split_with(g)
+    return a, b, c, d, e, f, g
+
 def Nodes(string):
     for x in string.split():
         yield Node(x)
@@ -501,6 +513,29 @@ class TestPlasma:
         b.grow(10, HORIZONTAL)
         assert b.parent.size == 70
         assert b.size == c.size == 25
+
+    def test_pixelperfect(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        root._height = 11
+        root._width = 11
+        ds = a.pixel_perfect
+        assert all(type(x) is int for x in (ds.x, ds.y, ds.width, ds.height))
+        assert a.width + b.width ==  11
+        assert a.pixel_perfect.width + b.pixel_perfect.width == 11
+        assert b.height + c.height == 11
+        assert b.pixel_perfect.height + c.pixel_perfect.height == 11
+
+    def test_pixelperfect_draw(self, root, complex_grid):
+        root._height = 10
+        for i in range(40, 50):
+            root._width = i
+            view = draw(root)
+            assert '#' not in view
+        root._width = 50
+        for i in range(10, 20):
+            root._height = i
+            view = draw(root)
+            assert '#' not in view
 
 class TestDebugging:
 
