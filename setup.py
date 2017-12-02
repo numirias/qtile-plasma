@@ -1,14 +1,23 @@
 from setuptools import setup
 
 setup(
-    name='plasma',
+    name='qtile-plasma',
     packages=['plasma'],
-    version='0.1',
-    description='Plasma layout for Qtile',
+    version='1.0',
+    description='An advanced, flexible layout for Qtile',
     author='numirias',
-    author_email='numirias+plasma@gmail.com',
+    author_email='numirias@users.noreply.github.com',
     url='https://github.com/numirias/qtile-plasma',
-    download_url='https://github.com/numirias/qtile-plasma/archive/v0.1.tar.gz',
-    keywords='qtile layout',
-    classifiers=[],
+    license='MIT',
+    python_requires='>=3',
+    install_requires=['xcffib', 'qtile'],
+    classifiers=[
+        'Development Status :: 4 - Beta',
+        'License :: OSI Approved :: MIT License',
+        'Operating System :: Unix',
+        'Programming Language :: Python',
+        'Programming Language :: Python :: 3',
+        'Programming Language :: Python :: 3.6',
+        'Topic :: Desktop Environment :: Window Managers',
+    ],
 )

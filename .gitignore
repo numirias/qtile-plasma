@@ -4,4 +4,6 @@ __pycache__/
 *.egg-info/
 .coverage
 .cache/
+build/
+dist/
 TODO
