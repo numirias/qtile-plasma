@@ -547,6 +547,35 @@ class TestPlasma:
         root.size = 10
         assert a._size is b._size is root._size is None
 
+    def test_set_xy(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        root.x = 10
+        root.y = 20
+        assert root.x == 10
+        assert root.y == 20
+        a.x = 30
+        a.y = 40
+        assert a.x == root.x == 10
+        assert a.y == root.y == 20
+        root.width = 50
+        root.height = 60
+        assert root._width == 50
+        assert root._height == 60
+
+    def test_set_width_height(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        a.width = 70
+        assert a.width == 70
+        assert b.width == c.width == 50
+        b.height = 30
+        assert b.height == 30
+        assert c.height == 20
+        b.width = 80
+        assert b.width == c.width == 80
+        assert a.width == 40
+        a.height = 20
+        assert a.height == 50
+
 class TestDebugging:
 
     def test_tree(self, root, grid):
