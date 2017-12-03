@@ -537,6 +537,16 @@ class TestPlasma:
             view = draw(root)
             assert '#' not in view
 
+    def test_resize_root(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        a.grow(10, orient=VERTICAL)
+        root.grow(10, orient=VERTICAL)
+        root.grow(10, orient=HORIZONTAL)
+        root.size = 10
+        assert a._size is b._size is root._size is None
+
 class TestDebugging:
 
     def test_tree(self, root, grid):

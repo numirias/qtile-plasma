@@ -168,7 +168,7 @@ class Node:
 
     @size.setter
     def size(self, val):
-        if len(self.siblings) == 0:
+        if self.is_root or len(self.siblings) == 0:
             return
         total = self.parent.capacity
         # Size can't be set smaller than minium or higher than available space
@@ -200,6 +200,8 @@ class Node:
         self._size = None
 
     def grow(self, amt, orient=None):
+        if self.is_root:
+            return
         if orient is (not self.parent.orient):
             self.parent.grow(amt)
             return
