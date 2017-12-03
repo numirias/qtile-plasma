@@ -28,8 +28,8 @@ class Canvas:
         for i in range(x+1, width+x):
             for j in range(y+1, y+height):
                 self.canvas[i][j] = '.'
-        for i in range(len(label)):
-            self.canvas[x+1+i][y+1] = label[i]
+        for i, char in enumerate(label):
+            self.canvas[x+1+i][y+1] = char
         self.canvas[x][y] = self.tl_corner
         self.canvas[x+width][y] = self.tr_corner
         self.canvas[x][y+height] = self.bl_corner
