@@ -110,6 +110,12 @@ class Node:
             return self.parent.x
         return self.parent.x + self.size_offset
 
+    @x.setter
+    def x(self, val):
+        if not self.is_root:
+            return
+        self._x = val
+
     @property
     def y(self):
         if self.is_root:
@@ -117,6 +123,12 @@ class Node:
         if self.vertical:
             return self.parent.y
         return self.parent.y + self.size_offset
+
+    @y.setter
+    def y(self, val):
+        if not self.is_root:
+            return
+        self._y = val
 
     @property
     def pos(self):
@@ -130,6 +142,15 @@ class Node:
             return self.parent.width
         return self.size
 
+    @width.setter
+    def width(self, val):
+        if self.is_root:
+            self._width = val
+        elif self.horizontal:
+            self.parent.size = val
+        else:
+            self.size = val
+
     @property
     def height(self):
         if self.is_root:
@@ -137,6 +158,15 @@ class Node:
         if self.vertical:
             return self.parent.height
         return self.size
+
+    @height.setter
+    def height(self, val):
+        if self.is_root:
+            self._height = val
+        elif self.vertical:
+            self.parent.size = val
+        else:
+            self.size = val
 
     @property
     def pixel_perfect(self):

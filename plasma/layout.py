@@ -51,10 +51,10 @@ class Plasma(Layout):
         self.root.find_payload(client).remove()
 
     def configure(self, client, screen):
-        self.root._x = screen.x
-        self.root._y = screen.y
-        self.root._width = screen.width
-        self.root._height = screen.height
+        self.root.x = screen.x
+        self.root.y = screen.y
+        self.root.width = screen.width
+        self.root.height = screen.height
         node = self.root.find_payload(client)
         border_width = \
             self.border_width_single if self.root.tree == [node] else \
