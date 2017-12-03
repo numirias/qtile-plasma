@@ -1,9 +1,6 @@
-import math
-import logging
 import copy
 
 from xcffib.xproto import StackMode
-from libqtile.log_utils import logger
 from libqtile.layout.base import Layout
 
 from .node import Node, HORIZONTAL, VERTICAL
@@ -15,8 +12,10 @@ class Plasma(Layout):
         ('name', 'Plasma', 'Layout name'),
         ('border_normal', '#333333', 'Unfocused window border color'),
         ('border_focus', '#00e891', 'Focused window border color'),
-        ('border_normal_fixed', '#333333', 'Unfocused fixed-size window border color'),
-        ('border_focus_fixed', '#00e8dc', 'Focused fixed-size window border color'),
+        ('border_normal_fixed', '#333333',
+         'Unfocused fixed-size window''border color'),
+        ('border_focus_fixed', '#00e8dc',
+         'Focused fixed-size window border color'),
         ('border_width', 1, 'Border width'),
         ('border_width_single', 0, 'Border width for single window'),
         ('margin', 0, 'Layout margin'),
@@ -60,9 +59,9 @@ class Plasma(Layout):
         border_width = \
             self.border_width_single if self.root.tree == [node] else \
             self.border_width
-        border_color = getattr(self, 'border_' + \
-            ('focus' if client.has_focus else 'normal') + \
-            ('' if node.flexible else '_fixed'))
+        border_color = getattr(self, 'border_' +
+                               ('focus' if client.has_focus else 'normal') +
+                               ('' if node.flexible else '_fixed'))
         x, y, width, height = node.pixel_perfect
         client.place(
             x,

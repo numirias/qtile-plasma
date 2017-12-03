@@ -109,6 +109,7 @@ class Node:
         if self.horizontal:
             return self.parent.x
         return self.parent.x + self.size_offset
+
     @property
     def y(self):
         if self.is_root:
@@ -168,7 +169,7 @@ class Node:
 
     @size.setter
     def size(self, val):
-        if self.is_root or len(self.siblings) == 0:
+        if self.is_root or not self.siblings:
             return
         total = self.parent.capacity
         # Size can't be set smaller than minium or higher than available space
@@ -255,7 +256,7 @@ class Node:
 
     def remove_child(self, node):
         self.children.remove(node)
-        if len(self.children) == 0:
+        if not self.children:
             assert self.is_root
             return
         if len(self.children) == 1:
@@ -279,7 +280,7 @@ class Node:
     def replace_child(self, old, new):
         self.children[self.children.index(old)] = new
         new.parent = self
-        new._size = old._size
+        new._size = old._size  # pylint: disable=protected-access
 
     def split_with(self, node):
         container = Node()
@@ -340,7 +341,7 @@ class Node:
         self.reset_size()
         target = self.parent.children[target_idx]
         self.parent.remove_child(self)
-        if len(target.children) == 0:
+        if not target.children:
             target.split_with(self)
         else:
             target.add_child(self)

@@ -520,7 +520,7 @@ class TestPlasma:
         root._width = 11
         ds = a.pixel_perfect
         assert all(type(x) is int for x in (ds.x, ds.y, ds.width, ds.height))
-        assert a.width + b.width ==  11
+        assert a.width + b.width == 11
         assert a.pixel_perfect.width + b.pixel_perfect.width == 11
         assert b.height + c.height == 11
         assert b.pixel_perfect.height + c.pixel_perfect.height == 11
@@ -574,7 +574,7 @@ class TestDebugging:
         │..........││..││..││..│
         │..........││..││..││..│
         └──────────┘└──┘└──┘└──┘
-        '''.replace(' ','')[1:]
+        '''.replace(' ', '')[1:]
 
     def test_info(self, root, grid, capsys):
         info(root)
