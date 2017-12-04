@@ -231,6 +231,7 @@ class Node:
         self._size = None
 
     def grow(self, amt, orient=None):
+        # TODO Deprecate grow
         if self.is_root:
             return
         if orient is (not self.parent.orient):

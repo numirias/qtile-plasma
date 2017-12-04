@@ -576,6 +576,10 @@ class TestPlasma:
         a.height = 20
         assert a.height == 50
 
+    def test_grow_directions(self, root, grid):
+        a, b, c, d, e = grid
+        # TODO
+
 class TestDebugging:
 
     def test_tree(self, root, grid):

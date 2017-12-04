@@ -166,11 +166,32 @@ class Plasma(Layout):
         self.focused_node.size = size
         self.refocus()
 
+    def cmd_width(self, val):
+        self.focused_node.width = val
+        self.refocus()
+
+    def cmd_height(self, val):
+        self.focused_node.height = val
+        self.refocus()
+
     def cmd_reset_size(self):
         self.focused_node.reset_size()
         self.refocus()
 
     def cmd_grow(self, amt, orthogonal=False):
-        orient = VERTICAL if orthogonal else HORIZONTAL
-        self.focused_node.grow(amt, orient)
+        # Should be deprecated (replaced by grow_width, grow_height)
+        if not orthogonal:
+            self.focused_node.width += amt
+        else:
+            self.focused_node.height += amt
         self.refocus()
+
+    def cmd_grow_width(self, amt):
+        self.focused_node.width += amt
+        self.refocus()
+
+    def cmd_grow_height(self, amt):
+        self.focused_node.height += amt
+        self.refocus()
+
+    # TODO Grow-left, grow-right, etc.
