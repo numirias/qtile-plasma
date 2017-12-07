@@ -4,6 +4,8 @@ from plasma.debug import draw, tree, info
 from plasma.node import Node, VERTICAL, HORIZONTAL
 
 
+Node.min_size_default = 10
+
 @fixture
 def root():
     root = Node('root', 0, 0, 120, 50)
@@ -404,11 +406,11 @@ class TestPlasma:
         assert a.size == 100
         assert b.size == 20
         root.add_child(c)
-        assert c.size == 40
+        assert c.size == approx(40)
         assert a.size == approx(100 * (2/3))
         assert b.size == approx(20 * (2/3))
         root.add_child(d)
-        assert c.size == d.size == 20
+        assert c.size == d.size == approx(20)
 
     def test_resize_absolute_and_relative2(self, root):
         a, b, c = Nodes('a b c')
@@ -424,12 +426,30 @@ class TestPlasma:
         assert b.size == 45
         assert c.size == 25
 
+    def test_resize_flat(self, root):
+        a, b, c, d, e, f = Nodes('a b_abs c d e_abs f_abs')
+        root.add_child(a)
+        root.add_child(b)
+        root.add_child(c)
+        root.add_child(d)
+        d.split_with(e)
+        e.split_with(f)
+        b.size = b.size
+        e.size = e.size
+        f.size = f.size
+        a.size = 60
+        assert a.size == 60
+        assert b.size == 25
+        assert c.size == 10
+        assert d.parent.size == 25
+        assert e.size == f.size == 25/2
+
     def test_resize_minimum(self, grid):
         a, b, c, d, e = grid
         b.grow(-100)
         assert b.size == 10
 
-    def test_resize_all_absolute_underflow(self, grid):
+    def test_resize_all_absolute_underflow(self, root, grid):
         a, b, c, d, e = grid
         c.size = 10
         d.size = 10
@@ -448,7 +468,7 @@ class TestPlasma:
         assert e.size == 40
         assert c.size == d.size == 10
 
-    def test_resize_overflow_with_relative(self, grid):
+    def test_resize_overflow_with_relative(self, root, grid):
         a, b, c, d, e = grid
         c.size = 20
         d.size = 40
@@ -461,6 +481,24 @@ class TestPlasma:
         assert d.size == 40
         assert e.size == 10
         assert e.flexible
+
+    def test_resize_overflow_with_relative2(self, root, grid):
+        a, b, c, d, e = grid
+        c.size = 20
+        d.size = 20
+        a.size = 70
+        assert a.size == 70
+        assert c.size == d.size == 20
+        assert e.size == 10
+        a.size = 80
+        assert a.size == 80
+        assert c.size == d.size == 15
+        assert e.size == 10
+        a.size = 90
+        assert a.size == 90
+        assert c.size == d.size == e.size == 10
+        a.size = 100
+        assert a.size == 90
 
     def test_resize_only_absolute_remains(self, root):
         a, b, c = Nodes('a b c')
@@ -579,6 +617,198 @@ class TestPlasma:
     def test_grow_directions(self, root, grid):
         a, b, c, d, e = grid
         # TODO
+
+    def test_min_size(self, root, small_grid):
+        a, b, c, d = small_grid
+        c.size += 10
+        d.size += 20
+        b.size = 20
+        assert a.min_size == Node.min_size_default
+        assert b.parent.min_size == 60
+        assert b.min_size == 20
+        assert c.parent.min_size == Node.min_size_default
+        assert c.min_size == 20
+        assert d.min_size == 40
+
+    def test_transitive_flexible(self, root, complex_grid):
+        a, b, c, d, e, f, g = complex_grid
+        assert b.parent.flexible
+        d.size = 20
+        e.size = 20
+        f.size = 10
+        assert b.parent.flexible
+        g.size = 10
+        assert not b.parent.flexible
+
+    def test_resize_bubbles(self, root, small_grid):
+        a, b, c, d = small_grid
+        c.size += 10
+        d.size += 20
+        assert c.size == 20
+        assert d.size == 40
+        a.size = 30
+        assert c.size == 30
+        assert d.size == 60
+
+    def test_resize_bubbles2(self, root, complex_grid):
+        a, b, c, d, e, f, g = complex_grid
+        c.split_with(Node('h'))
+        f.size += 10
+        g.size += 10
+        assert f.size == g.size == 10
+        assert f.fixed and g.fixed
+        assert d.size == e.size == 20
+        assert d.flexible and e.flexible
+        a.size -= 40
+        assert a.size == 20
+        assert f.size == g.size == 10
+        assert d.size == e.size == 40
+        d.size = 10
+        assert d.size == 10
+        assert e.size == 70
+        assert f.size == g.size == 10
+        assert e.flexible
+        e.size = 10
+        assert e.fixed
+
+    def test_resize_bubbles3(self, root, complex_grid):
+        a, b, c, d, e, f, g = complex_grid
+        h = Node('h')
+        c.split_with(h)
+        f.size += 10
+        g.size += 10
+        assert f.size == g.size == c.size == h.size == 10
+        a.size = 10
+        assert a.size == 10
+        assert f.size == g.size == c.size == h.size == 10
+        assert d.size == e.size == 45
+        d.size = 10
+        assert d.size == 10
+        assert e.size == 80
+        e.size = 10
+        assert e.size == 10
+        assert f.size == g.size == c.size == h.size == d.size == 100/3
+
+    def test_resize_nested(self, root):
+        a, b, c, d, e, f, g, h = Nodes('a b c_abs d_abs e f g h_abs')
+        nu1, nu2, nd, mu, md1, md2 = Nodes('nu1_abs nu2_abs nd mu md1_abs md2')
+        ou1, ou2, od, pu, pd1, pd2 = Nodes('ou1_abs ou2_abs od pu pd1_abs '
+                                           'pd2_abs')
+        root.add_child(a)
+        root.add_child(b)
+        b.split_with(c)
+        b.parent.add_child(e)
+        b.parent.add_child(g)
+        c.split_with(d)
+        e.split_with(f)
+        g.split_with(h)
+
+        b.parent.add_child(nu1)
+        nu1.split_with(mu)
+        nu1.split_with(nd)
+        nu1.split_with(nu2)
+        mu.split_with(md1)
+        md1.split_with(md2)
+
+        b.parent.add_child(ou1)
+        ou1.split_with(pu)
+        ou1.split_with(od)
+        ou1.split_with(ou2)
+        pu.split_with(pd1)
+        pd1.split_with(pd2)
+
+        def assert_first_state():
+            assert b.parent.size == 60
+            assert c.size == 40
+            assert d.size == 20
+            assert e.size == f.size == 30
+            assert g.size == 40
+            assert h.size == 20
+            assert nu1.size == 10
+            assert nu2.size == 20
+            assert nd.parent.size == 30
+            assert mu.parent.size == 30
+            assert md1.size == 10
+            assert md2.size == 20
+            assert ou1.size == 10
+            assert ou2.size == 20
+            assert od.parent.size == 30
+            assert pu.parent.size == 30
+            assert pd1.size == 10
+            assert pd2.size == 20
+
+        def assert_second_state():
+            assert a.size == 30
+            assert b.parent.size == 90
+            assert c.size == 60
+            assert d.size == 30
+            assert e.size == f.size == 45
+            assert g.size == 70
+            assert h.size == 20
+            assert nu1.size == 10
+            assert nu2.size == 20
+            assert nd.parent.size == 30
+            assert mu.parent.size == 60
+            assert md1.size == 10
+            assert md2.size == 50
+            assert ou1.size == 15
+            assert ou2.size == 30
+            assert od.parent.size == 45
+            assert pd1.size == 15
+            assert pd2.size == 30
+            assert pu.parent.size == 45
+
+        b.parent.size = 60
+        c.size += 5
+        d.size -= 5
+        h.size = 20
+        nu1.size = 10
+        nu2.size = 20
+        md1.size = 10
+        ou1.size = 10
+        ou2.size = 20
+        pd1.size = 10
+        pd2.size = 20
+
+        assert a.size == 60
+        assert_first_state()
+        a.size -= 30
+        assert_second_state()
+        a.size += 30
+        assert a.size == 60
+        assert_first_state()
+        b.parent.size += 30
+        assert_second_state()
+        b.parent.size -= 30
+        assert a.size == 60
+        assert_first_state()
+
+        a.size = 30
+        x = Node('x')
+        root.add_child(x)
+        assert x.size == 40
+        assert_first_state()
+        x.remove()
+        assert_second_state()
+
+        a.remove()
+        assert b.width == 120
+        y = Node('y')
+        root.add_child(y)
+        assert_first_state()
+
+    def test_resize_max(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        a.width = 120
+        assert a.width == 110
+        assert b.width == c.width == 10
+
+    def test_root_without_dimensions(self):
+        """A root node with undef. dimensions should be able to add a child."""
+        root = Node()
+        x = Node('x')
+        root.add_child(x)
+
 
 class TestDebugging:
 
