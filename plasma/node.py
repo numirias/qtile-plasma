@@ -3,11 +3,41 @@ from collections import namedtuple
 
 HORIZONTAL = False
 VERTICAL = True
-MIN_SIZE = 10
-ROOT_ORIENT = HORIZONTAL
 Dimensions = namedtuple('Dimensions', 'x y width height')
 
+def fit_into(nodes, space):
+    """Resize nodes so that they fit into the specified space."""
+    if not nodes:
+        return
+    occupied = sum(n.min_size for n in nodes)
+    if space >= occupied and any(n.flexible for n in nodes):
+        # If any flexible node exists, it will occupy the space automatically,
+        # not requiring any action.
+        return
+    nodes_left = nodes.copy()
+    space_left = space
+    if space < occupied:
+        for node in nodes:
+            if node.min_size_bound != node.min_size:
+                continue
+            # Substract nodes that are already at their minimal possible size
+            # because they can't be shrinked any further.
+            space_left -= node.min_size
+            nodes_left.remove(node)
+    if not nodes_left:
+        return
+    factor = space_left / sum(n.size for n in nodes_left)
+    for node in nodes_left:
+        new_size = node.size * factor
+        if node.fixed:
+            node._size = new_size  # pylint: disable=protected-access
+        for child in node.children:
+            fit_into(child.children, new_size)
+
 class Node:
+
+    min_size_default = 100
+    root_orient = HORIZONTAL
 
     def __init__(self, payload=None, x=None, y=None, width=None, height=None):
         self.payload = payload
@@ -83,7 +113,7 @@ class Node:
     @property
     def orient(self):
         if self.is_root:
-            return ROOT_ORIENT
+            return self.root_orient
         return not self.parent.orient
 
     @property
@@ -191,41 +221,61 @@ class Node:
             return None
         if self.fixed:
             return self._size
-        # Distribute space evenly among flexible containers
-        total = self.parent.capacity
-        taken = sum(c.size for c in self.siblings if c.fixed)
-        flexibles = [c for c in self.parent.children if c.flexible]
-        return (total - taken) / len(flexibles)
+        if self.flexible:
+            # Distribute space evenly among flexible nodes
+            taken = sum(n.size for n in self.siblings if not n.flexible)
+            flexibles = [n for n in self.parent.children if n.flexible]
+            return (self.parent.capacity - taken) / len(flexibles)
+        return max(sum(gc.min_size for gc in c.children)
+                   for c in self.children)
 
     @size.setter
     def size(self, val):
         if self.is_root or not self.siblings:
             return
-        total = self.parent.capacity
-        # Size can't be set smaller than minium or higher than available space
-        val = min(total - MIN_SIZE * len(self.siblings), max(MIN_SIZE, val))
-        # Space left in container after applying size
-        space = total - sum(c.min_size for c in self.siblings) - val
-        # If the container overflows, or some space remains but there are no
-        # flexible containers to grow into it...
-        if space < 0 or not any(c.flexible for c in self.siblings):
-            fixed_total = sum(c.size for c in self.siblings if c.fixed)
-            # ...shrink/grow all siblings to fill the space
-            for sibling in [c for c in self.siblings if c.fixed]:
-                sibling._size *= (fixed_total + space) / fixed_total
-        self._size = val
+        occupied = sum(s.min_size_bound for s in self.siblings)
+        val = max(min(val, self.parent.capacity - occupied),
+                  self.min_size_bound)
+        self.force_size(val)
+
+    def force_size(self, val):
+        fit_into(self.siblings, self.parent.capacity - val)
+        if val != 0:
+            if self.children:
+                fit_into([self], val)
+            self._size = val
 
     @property
     def flexible(self):
-        return self._size is None
+        """A node is flexible if its size isn't (explicitly or implictly)
+        determined.
+        """
+        if self.fixed:
+            return False
+        return all((any(gc.flexible for gc in c.children) or not c.children)
+                   for c in self.children)
 
     @property
     def fixed(self):
+        """A node is fixed if it has a specified size."""
         return self._size is not None
 
     @property
     def min_size(self):
-        return MIN_SIZE if self.flexible else self._size
+        if self.fixed:
+            return self._size
+        if self.is_leaf:
+            return self.min_size_default
+        size = max(sum(gc.min_size for gc in c.children)
+                   for c in self.children)
+        return max(size, self.min_size_default)
+
+    @property
+    def min_size_bound(self):
+        if self.is_leaf:
+            return self.min_size_default
+        return max(sum(gc.min_size_bound for gc in c.children) or
+                   self.min_size_default for c in self.children)
 
     def reset_size(self):
         self._size = None
@@ -271,21 +321,16 @@ class Node:
         return self.neighbor(HORIZONTAL, 1)
 
     def add_child(self, node, idx=None):
-        # If has children and each child has absolute size...
-        if not self.is_leaf and all(c.fixed for c in self.children):
-            num = len(self.children)
-            # ...shrink each child to make space for new child
-            for child in self.children:
-                child._size /= (num + 1) / num
         if idx is None:
             idx = len(self.children)
         self.children.insert(idx, node)
         node.parent = self
-
-    def add_child_after(self, new, old):
-        self.add_child(new, idx=self.children.index(old)+1)
+        if not len(self.children) == 1:
+            total = self.capacity
+            fit_into(node.siblings, total - (total / len(self.children)))
 
     def remove_child(self, node):
+        node.force_size(0)
         self.children.remove(node)
         if not self.children:
             assert self.is_root
@@ -297,13 +342,9 @@ class Node:
             else:
                 # A single child doesn't need an absolute size
                 self.children[0].reset_size()
-            return
-        # If no flexible children are there to fill empty space...
-        if all([c.fixed for c in self.children]):
-            # ...grow all children to fill the space
-            factor = self.capacity / sum(c.size for c in self.children)
-            for child in self.children:
-                child._size *= factor
+
+    def add_child_after(self, new, old):
+        self.add_child(new, idx=self.children.index(old)+1)
 
     def remove(self):
         self.parent.remove_child(self)
