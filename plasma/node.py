@@ -1,9 +1,14 @@
 from collections import namedtuple
+from enum import Enum
+from math import hypot
 
 
+Dimensions = namedtuple('Dimensions', 'x y width height')
+Point = namedtuple('Point', 'x y')
+Direction = Enum('Direction', 'UP DOWN LEFT RIGHT')
+UP, DOWN, LEFT, RIGHT = list(Direction)
 HORIZONTAL = False
 VERTICAL = True
-Dimensions = namedtuple('Dimensions', 'x y width height')
 
 def fit_into(nodes, space):
     """Resize nodes so that they fit into the specified space."""
@@ -61,6 +66,13 @@ class Node:
         return self.parent is None
 
     @property
+    def root(self):
+        try:
+            return self.parent.root
+        except AttributeError:
+            return self
+
+    @property
     def index(self):
         return self.parent.children.index(self)
 
@@ -88,9 +100,9 @@ class Node:
     def recent_leaf(self):
         if self.is_leaf:
             return self
-        if self.last_accessed is None:
-            return self.children[0].recent_leaf
-        return self.last_accessed.recent_leaf
+        if self.last_accessed in self.children:
+            return self.last_accessed.recent_leaf
+        return self.children[0].recent_leaf
 
     @property
     def prev_leaf(self):
@@ -129,6 +141,13 @@ class Node:
         return [x.tree if x.children else x for x in self.children]
 
     @property
+    def all(self):
+        if self.is_leaf:
+            yield self
+        for child in self.children:
+            yield from child.all
+
+    @property
     def size_offset(self):
         return sum(c.size for c in self.parent.children[:self.index])
 
@@ -162,7 +181,7 @@ class Node:
 
     @property
     def pos(self):
-        return (self.x, self.y)
+        return Point(self.x, self.y)
 
     @property
     def width(self):
@@ -197,6 +216,18 @@ class Node:
             self.parent.size = val
         else:
             self.size = val
+
+    @property
+    def center_x(self):
+        return (2 * self.x + self.width) / 2
+
+    @property
+    def center_y(self):
+        return (2 * self.y + self.height) / 2
+
+    @property
+    def center(self):
+        return Point(self.center_x, self.center_y)
 
     @property
     def pixel_perfect(self):
@@ -293,6 +324,7 @@ class Node:
         self.parent.last_accessed = self
 
     def neighbor(self, orient, direction):
+        """Return adjacent leaf node in specified direction."""
         if self.is_root:
             return None
         if orient is self.parent.orient:
@@ -306,6 +338,7 @@ class Node:
 
     @property
     def up(self):
+        # TODO Rewrite orient, direction as LRUD
         return self.neighbor(VERTICAL, -1)
 
     @property
@@ -319,6 +352,47 @@ class Node:
     @property
     def right(self):
         return self.neighbor(HORIZONTAL, 1)
+
+    def close_neighbor(self, direction):
+        """Return geometrically nearest leaf node in specified direction."""
+        # TODO Look For last access if neighbors are very close
+        nodes = self.root.all
+        if direction is UP:
+            x = self.center_x
+            y = self.y
+            func = lambda n: n.center.y < y
+        elif direction is DOWN:
+            x = self.center_x
+            y = self.y + self.height
+            func = lambda n: n.center.y > y
+        elif direction is LEFT:
+            x = self.x
+            y = self.center_y
+            func = lambda n: n.center.x < x
+        elif direction is RIGHT:
+            x = self.x + self.width
+            y = self.center_y
+            func = lambda n: n.center.x > x
+        cands = list(filter(func, nodes))
+        if not cands:
+            return None
+        return min(cands, key=lambda n: hypot(x - n.center.x, y - n.center.y))
+
+    @property
+    def close_up(self):
+        return self.close_neighbor(UP)
+
+    @property
+    def close_down(self):
+        return self.close_neighbor(DOWN)
+
+    @property
+    def close_left(self):
+        return self.close_neighbor(LEFT)
+
+    @property
+    def close_right(self):
+        return self.close_neighbor(RIGHT)
 
     def add_child(self, node, idx=None):
         if idx is None:

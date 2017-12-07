@@ -113,16 +113,16 @@ class Plasma(Layout):
         self.focus_node(self.focused_node.next_leaf)
 
     def cmd_left(self):
-        self.focus_node(self.focused_node.left)
+        self.focus_node(self.focused_node.close_left)
 
     def cmd_right(self):
-        self.focus_node(self.focused_node.right)
+        self.focus_node(self.focused_node.close_right)
 
     def cmd_up(self):
-        self.focus_node(self.focused_node.up)
+        self.focus_node(self.focused_node.close_up)
 
     def cmd_down(self):
-        self.focus_node(self.focused_node.down)
+        self.focus_node(self.focused_node.close_down)
 
     def cmd_move_left(self):
         self.focused_node.move_left()

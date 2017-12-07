@@ -809,6 +809,42 @@ class TestPlasma:
         x = Node('x')
         root.add_child(x)
 
+    def test_root(self, root, grid):
+        for node in grid:
+            assert node.root is root
+
+    def test_all(self, root, grid):
+        assert set(root.all) == set(grid)
+
+    def test_close_neighbor(self, root):
+        a, b, c, d = Nodes('a b c d')
+        root.add_child(a)
+        root.add_child(b)
+        a.split_with(c)
+        b.split_with(d)
+        assert a.close_up is None
+        assert a.close_left is None
+        assert a.close_right is b
+        assert a.close_down is c
+
+        assert b.close_up is None
+        assert b.close_left is a
+        assert b.close_right is None
+        assert b.close_down is d
+
+        assert c.close_up is a
+        assert c.close_left is None
+        assert c.close_right is d
+        assert c.close_down is None
+
+        assert d.close_up is b
+        assert d.close_left is c
+        assert d.close_right is None
+        assert d.close_down is None
+
+    def test_close_neighbor2(self, root, small_grid):
+        a, b, c, d = small_grid
+        assert b.close_left is a
 
 class TestDebugging:
 
