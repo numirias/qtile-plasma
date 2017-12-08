@@ -97,7 +97,7 @@ class Node:
 
     @property
     def is_leaf(self):
-        return len(self.children) == 0
+        return not self.children
 
     @property
     def first_leaf(self):
@@ -153,7 +153,7 @@ class Node:
 
     @property
     def tree(self):
-        return [x.tree if x.children else x for x in self.children]
+        return [c.tree if c.children else c for c in self.children]
 
     @property
     def all(self):
@@ -298,7 +298,7 @@ class Node:
         """
         if self.fixed:
             return False
-        return all((any(gc.flexible for gc in c.children) or not c.children)
+        return all((any(gc.flexible for gc in c.children) or c.is_leaf)
                    for c in self.children)
 
     @property
@@ -413,26 +413,25 @@ class Node:
             idx = len(self.children)
         self.children.insert(idx, node)
         node.parent = self
-        if not len(self.children) == 1:
-            total = self.capacity
-            fit_into(node.siblings, total - (total / len(self.children)))
+        if len(self.children) == 1:
+            return
+        total = self.capacity
+        fit_into(node.siblings, total - (total / len(self.children)))
+
+    def add_child_after(self, new, old):
+        self.add_child(new, idx=self.children.index(old)+1)
 
     def remove_child(self, node):
         node.force_size(0)
         self.children.remove(node)
-        if not self.children:
-            assert self.is_root
+        if len(self.children) != 1:
             return
-        if len(self.children) == 1:
-            if not self.is_root:
-                # Collapse tree with a single child
-                self.parent.replace_child(self, self.children[0])
-            else:
-                # A single child doesn't need an absolute size
-                self.children[0].reset_size()
-
-    def add_child_after(self, new, old):
-        self.add_child(new, idx=self.children.index(old)+1)
+        if not self.is_root:
+            # Collapse tree with a single child
+            self.parent.replace_child(self, self.children[0])
+        else:
+            # A single child doesn't need an absolute size
+            self.children[0].reset_size()
 
     def remove(self):
         self.parent.remove_child(self)
@@ -452,9 +451,8 @@ class Node:
     def move(self, direction):
         if self.is_root:
             return
-        # TODO make "is"
-        if direction.orientation == self.parent.orient:
-            old_idx = self.parent.children.index(self)
+        if direction.orientation is self.parent.orient:
+            old_idx = self.index
             new_idx = old_idx + direction.offset
             if 0 <= new_idx < len(self.parent.children):
                 ch = self.parent.children
@@ -494,14 +492,14 @@ class Node:
         if direction.orientation != self.parent.orient:
             self._move_and_integrate(direction)
             return
-        target_idx = self.parent.children.index(self) + direction.offset
+        target_idx = self.index + direction.offset
         if target_idx < 0 or target_idx >= len(self.parent.children):
             self._move_and_integrate(direction)
             return
         self.reset_size()
         target = self.parent.children[target_idx]
         self.parent.remove_child(self)
-        if not target.children:
+        if target.is_leaf:
             target.split_with(self)
         else:
             target.add_child(self)
