@@ -1,14 +1,29 @@
 from collections import namedtuple
-from enum import Enum
+from enum import Enum, auto
 from math import hypot
 
 
 Dimensions = namedtuple('Dimensions', 'x y width height')
 Point = namedtuple('Point', 'x y')
-Direction = Enum('Direction', 'UP DOWN LEFT RIGHT')
-UP, DOWN, LEFT, RIGHT = list(Direction)
 HORIZONTAL = False
 VERTICAL = True
+
+class Direction(Enum):
+
+    UP = auto()
+    DOWN = auto()
+    LEFT = auto()
+    RIGHT = auto()
+
+    @property
+    def orientation(self):
+        return HORIZONTAL if self.name in ['LEFT', 'RIGHT'] else VERTICAL
+
+    @property
+    def offset(self):
+        return 1 if self.name in ['RIGHT', 'DOWN'] else -1
+
+UP, DOWN, LEFT, RIGHT = list(Direction)
 
 def fit_into(nodes, space):
     """Resize nodes so that they fit into the specified space."""
@@ -327,9 +342,8 @@ class Node:
         """Return adjacent leaf node in specified direction."""
         if self.is_root:
             return None
-        orient = HORIZONTAL if direction in [LEFT, RIGHT] else VERTICAL
-        if orient is self.parent.orient:
-            target_idx = self.index + (1 if direction in [DOWN, RIGHT] else -1)
+        if direction.orientation is self.parent.orient:
+            target_idx = self.index + direction.offset
             if 0 <= target_idx < len(self.parent.children):
                 return self.parent.children[target_idx].recent_leaf
             if self.parent.is_root:
@@ -354,7 +368,7 @@ class Node:
         return self.neighbor(RIGHT)
 
     def close_neighbor(self, direction):
-        """Return geometrically nearest leaf node in specified direction."""
+        """Return geometrically close leaf node in specified direction."""
         # TODO Look For last access if neighbors are very close
         nodes = self.root.all
         if direction is UP:
@@ -435,12 +449,13 @@ class Node:
         for child in [self, node]:
             container.add_child(child)
 
-    def move(self, orient, direction=1):
+    def move(self, direction):
         if self.is_root:
             return
-        if orient == self.parent.orient:
+        # TODO make "is"
+        if direction.orientation == self.parent.orient:
             old_idx = self.parent.children.index(self)
-            new_idx = old_idx + direction
+            new_idx = old_idx + direction.offset
             if 0 <= new_idx < len(self.parent.children):
                 ch = self.parent.children
                 ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
@@ -455,34 +470,33 @@ class Node:
             return
         self.reset_size()
         self.parent.remove_child(self)
-        offset = 1 if direction == 1 else 0
-        new_parent.add_child(self, idx + offset)
+        new_parent.add_child(self, idx + (1 if direction.offset == 1 else 0))
 
     def move_up(self):
-        self.move(VERTICAL, -1)
+        self.move(UP)
 
     def move_down(self):
-        self.move(VERTICAL, 1)
+        self.move(DOWN)
 
     def move_right(self):
-        self.move(HORIZONTAL, 1)
+        self.move(RIGHT)
 
     def move_left(self):
-        self.move(HORIZONTAL, -1)
+        self.move(LEFT)
 
-    def _move_and_integrate(self, orient, direction):
+    def _move_and_integrate(self, direction):
         old_parent = self.parent
-        self.move(orient, direction)
+        self.move(direction)
         if self.parent is not old_parent:
-            self.integrate(orient, direction)
+            self.integrate(direction)
 
-    def integrate(self, orient, direction):
-        if orient != self.parent.orient:
-            self._move_and_integrate(orient, direction)
+    def integrate(self, direction):
+        if direction.orientation != self.parent.orient:
+            self._move_and_integrate(direction)
             return
-        target_idx = self.parent.children.index(self) + direction
+        target_idx = self.parent.children.index(self) + direction.offset
         if target_idx < 0 or target_idx >= len(self.parent.children):
-            self._move_and_integrate(orient, direction)
+            self._move_and_integrate(direction)
             return
         self.reset_size()
         target = self.parent.children[target_idx]
@@ -493,16 +507,16 @@ class Node:
             target.add_child(self)
 
     def integrate_up(self):
-        self.integrate(VERTICAL, -1)
+        self.integrate(UP)
 
     def integrate_down(self):
-        self.integrate(VERTICAL, 1)
+        self.integrate(DOWN)
 
     def integrate_left(self):
-        self.integrate(HORIZONTAL, -1)
+        self.integrate(LEFT)
 
     def integrate_right(self):
-        self.integrate(HORIZONTAL, 1)
+        self.integrate(RIGHT)
 
     def find_payload(self, payload):
         if self.payload is payload:
