@@ -323,35 +323,35 @@ class Node:
     def access(self):
         self.parent.last_accessed = self
 
-    def neighbor(self, orient, direction):
+    def neighbor(self, direction):
         """Return adjacent leaf node in specified direction."""
         if self.is_root:
             return None
+        orient = HORIZONTAL if direction in [LEFT, RIGHT] else VERTICAL
         if orient is self.parent.orient:
-            target_idx = self.index + direction
+            target_idx = self.index + (1 if direction in [DOWN, RIGHT] else -1)
             if 0 <= target_idx < len(self.parent.children):
                 return self.parent.children[target_idx].recent_leaf
             if self.parent.is_root:
                 return None
-            return self.parent.parent.neighbor(orient, direction)
-        return self.parent.neighbor(orient, direction)
+            return self.parent.parent.neighbor(direction)
+        return self.parent.neighbor(direction)
 
     @property
     def up(self):
-        # TODO Rewrite orient, direction as LRUD
-        return self.neighbor(VERTICAL, -1)
+        return self.neighbor(UP)
 
     @property
     def down(self):
-        return self.neighbor(VERTICAL, 1)
+        return self.neighbor(DOWN)
 
     @property
     def left(self):
-        return self.neighbor(HORIZONTAL, -1)
+        return self.neighbor(LEFT)
 
     @property
     def right(self):
-        return self.neighbor(HORIZONTAL, 1)
+        return self.neighbor(RIGHT)
 
     def close_neighbor(self, direction):
         """Return geometrically nearest leaf node in specified direction."""
