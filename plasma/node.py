@@ -1,12 +1,12 @@
 from collections import namedtuple
 from enum import Enum, auto
-from math import hypot
+from math import isclose
 
 
-Dimensions = namedtuple('Dimensions', 'x y width height')
-Point = namedtuple('Point', 'x y')
 HORIZONTAL = False
 VERTICAL = True
+Dimensions = namedtuple('Dimensions', 'x y width height')
+Point = namedtuple('Point', 'x y')
 
 class Direction(Enum):
 
@@ -25,8 +25,15 @@ class Direction(Enum):
 
 UP, DOWN, LEFT, RIGHT = list(Direction)
 
+border_check = {
+    UP: lambda a, b: isclose(a.y, b.y_end),
+    DOWN: lambda a, b: isclose(a.y_end, b.y),
+    LEFT: lambda a, b: isclose(a.x, b.x_end),
+    RIGHT: lambda a, b: isclose(a.x_end, b.x),
+}
+
 def fit_into(nodes, space):
-    """Resize nodes so that they fit into the specified space."""
+    """Resize nodes to fit them into the specified space."""
     if not nodes:
         return
     occupied = sum(n.min_size for n in nodes)
@@ -113,6 +120,7 @@ class Node:
 
     @property
     def recent_leaf(self):
+        # TODO Propagate
         if self.is_leaf:
             return self
         if self.last_accessed in self.children:
@@ -156,11 +164,11 @@ class Node:
         return [c.tree if c.children else c for c in self.children]
 
     @property
-    def all(self):
+    def all_leafs(self):
         if self.is_leaf:
             yield self
         for child in self.children:
-            yield from child.all
+            yield from child.all_leafs
 
     @property
     def size_offset(self):
@@ -233,16 +241,41 @@ class Node:
             self.size = val
 
     @property
+    def x_end(self):
+        return self.x + self.width
+
+    @property
+    def y_end(self):
+        return self.y + self.height
+
+    @property
     def center_x(self):
-        return (2 * self.x + self.width) / 2
+        # TODO x_center
+        return self.x + self.width / 2
 
     @property
     def center_y(self):
-        return (2 * self.y + self.height) / 2
+        return self.y + self.height / 2
 
     @property
     def center(self):
         return Point(self.center_x, self.center_y)
+
+    @property
+    def top_left(self):
+        return Point(self.x, self.y)
+
+    @property
+    def top_right(self):
+        return Point(self.x + self.width, self.y)
+
+    @property
+    def bottom_left(self):
+        return Point(self.x, self.y + self.height)
+
+    @property
+    def bottom_right(self):
+        return Point(self.x + self.width, self.y + self.height)
 
     @property
     def pixel_perfect(self):
@@ -367,30 +400,30 @@ class Node:
     def right(self):
         return self.neighbor(RIGHT)
 
+    def common_border(self, node, direction):
+        """Return whether a common border with given node in specified
+        direction exists.
+        """
+        if not border_check[direction](self, node):
+            return False
+        if direction in [UP, DOWN]:
+            detached = node.x >= self.x_end or node.x_end <= self.x
+        else:
+            detached = node.y >= self.y_end or node.y_end <= self.y
+        return not detached
+
     def close_neighbor(self, direction):
-        """Return geometrically close leaf node in specified direction."""
-        # TODO Look For last access if neighbors are very close
-        nodes = self.root.all
-        if direction is UP:
-            x = self.center_x
-            y = self.y
-            func = lambda n: n.center.y < y
-        elif direction is DOWN:
-            x = self.center_x
-            y = self.y + self.height
-            func = lambda n: n.center.y > y
-        elif direction is LEFT:
-            x = self.x
-            y = self.center_y
-            func = lambda n: n.center.x < x
-        elif direction is RIGHT:
-            x = self.x + self.width
-            y = self.center_y
-            func = lambda n: n.center.x > x
-        cands = list(filter(func, nodes))
-        if not cands:
+        """Return visually adjacent leaf node in specified direction."""
+        candidates = [n for n in self.root.all_leafs if
+                      self.common_border(n, direction)]
+        if direction in [UP, DOWN]:
+            match = lambda n: n.x <= self.center_x <= n.x_end
+        else:
+            match = lambda n: n.y <= self.center_y <= n.y_end
+        try:
+            return next(n for n in candidates if match(n))
+        except StopIteration:
             return None
-        return min(cands, key=lambda n: hypot(x - n.center.x, y - n.center.y))
 
     @property
     def close_up(self):
@@ -409,6 +442,7 @@ class Node:
         return self.close_neighbor(RIGHT)
 
     def add_child(self, node, idx=None):
+        # TODO Auto-split-with if required
         if idx is None:
             idx = len(self.children)
         self.children.insert(idx, node)

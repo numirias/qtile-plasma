@@ -814,7 +814,7 @@ class TestPlasma:
             assert node.root is root
 
     def test_all(self, root, grid):
-        assert set(root.all) == set(grid)
+        assert set(root.all_leafs) == set(grid)
 
     def test_close_neighbor(self, root):
         a, b, c, d = Nodes('a b c d')
@@ -846,11 +846,47 @@ class TestPlasma:
         a, b, c, d = small_grid
         assert b.close_left is a
 
+    def test_close_neighbor_nested(self, root, grid):
+        a, b, c, d, e = grid
+        f, g, h, i, j, k, L = Nodes('f g h i j k l')
+        root.add_child(f)
+        d.split_with(h)
+        a.split_with(i)
+        e.split_with(j)
+        e.parent.add_child(k)
+        f.split_with(L)
+        f.height = 10
+        assert b.close_down is d
+        b.split_with(g)
+        assert b.close_down is c
+        assert d.close_right is e
+        assert e.close_left is d
+        assert L.close_left is e
+        assert e.close_up is g
+        assert L.close_right is None
+        assert h.close_down is None
+
+    def test_close_neighbor_approx(self, root, small_grid):
+        """Tolerate floating point errors when calculating common borders."""
+        root.height += 30
+        a, b, c, d = small_grid
+        e, f, g = Nodes('e f g')
+        c.split_with(f)
+        b.parent.add_child(e)
+        c.parent.add_child(g)
+        assert g.close_down is e
+
+    def test_points(self, root, small_grid):
+        a, b, c, d = small_grid
+        assert c.top_left == (60, 25)
+        assert c.top_right == (90, 25)
+        assert c.bottom_left == (60, 50)
+        assert c.bottom_right == (90, 50)
+
 class TestDebugging:
 
     def test_tree(self, root, grid):
         lines = tree(root).split('\n')
-        print(lines)
         assert lines[0].startswith('root')
         assert lines[1].strip().startswith('a')
         assert lines[2].strip().startswith('*')
