@@ -883,6 +883,11 @@ class TestPlasma:
         assert c.bottom_left == (60, 50)
         assert c.bottom_right == (90, 50)
 
+    def test_center(self, root):
+        assert root.x_center == 60
+        assert root.y_center == 25
+        assert root.center == (60, 25)
+
 class TestDebugging:
 
     def test_tree(self, root, grid):

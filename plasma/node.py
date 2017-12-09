@@ -249,17 +249,17 @@ class Node:
         return self.y + self.height
 
     @property
-    def center_x(self):
+    def x_center(self):
         # TODO x_center
         return self.x + self.width / 2
 
     @property
-    def center_y(self):
+    def y_center(self):
         return self.y + self.height / 2
 
     @property
     def center(self):
-        return Point(self.center_x, self.center_y)
+        return Point(self.x_center, self.y_center)
 
     @property
     def top_left(self):
@@ -417,9 +417,9 @@ class Node:
         candidates = [n for n in self.root.all_leafs if
                       self.common_border(n, direction)]
         if direction in [UP, DOWN]:
-            match = lambda n: n.x <= self.center_x <= n.x_end
+            match = lambda n: n.x <= self.x_center <= n.x_end
         else:
-            match = lambda n: n.y <= self.center_y <= n.y_end
+            match = lambda n: n.y <= self.y_center <= n.y_end
         try:
             return next(n for n in candidates if match(n))
         except StopIteration:
