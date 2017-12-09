@@ -888,6 +888,27 @@ class TestPlasma:
         assert root.y_center == 25
         assert root.center == (60, 25)
 
+    def test_recent_leaf(self, root, grid):
+        a, b, c, d, e = grid
+        assert d.parent.recent_leaf is c
+        c.access()
+        d.access()
+        assert d.parent.recent_leaf is d
+        b.access()
+        c.access()
+        assert root.recent_leaf is c
+        a.access()
+        assert root.recent_leaf is a
+
+    def test_recent_close_neighbor(self, root, grid):
+        a, b, c, d, e = grid
+        assert b.close_down is d
+        c.access()
+        assert b.close_down is c
+        assert a.close_right is c
+        b.access()
+        assert a.close_right is b
+
 class TestDebugging:
 
     def test_tree(self, root, grid):

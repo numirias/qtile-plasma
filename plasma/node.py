@@ -1,4 +1,5 @@
 from collections import namedtuple
+from datetime import datetime
 from enum import Enum, auto
 from math import isclose
 
@@ -74,7 +75,7 @@ class Node:
         self._height = height
         self._size = None
         self.children = []
-        self.last_accessed = None
+        self.last_accessed = datetime.min
         self.parent = None
 
     def __repr__(self):
@@ -120,12 +121,9 @@ class Node:
 
     @property
     def recent_leaf(self):
-        # TODO Propagate
         if self.is_leaf:
             return self
-        if self.last_accessed in self.children:
-            return self.last_accessed.recent_leaf
-        return self.children[0].recent_leaf
+        return max(self.children, key=lambda n: n.last_accessed).recent_leaf
 
     @property
     def prev_leaf(self):
@@ -369,7 +367,11 @@ class Node:
         self.size += amt
 
     def access(self):
-        self.parent.last_accessed = self
+        self.last_accessed = datetime.now()
+        try:
+            self.parent.access()
+        except AttributeError:
+            pass
 
     def neighbor(self, direction):
         """Return adjacent leaf node in specified direction."""
@@ -414,16 +416,18 @@ class Node:
 
     def close_neighbor(self, direction):
         """Return visually adjacent leaf node in specified direction."""
-        candidates = [n for n in self.root.all_leafs if
-                      self.common_border(n, direction)]
+        nodes = [n for n in self.root.all_leafs if
+                 self.common_border(n, direction)]
+        if not nodes:
+            return None
+        most_recent = max(nodes, key=lambda n: n.last_accessed)
+        if most_recent.last_accessed > datetime.min:
+            return most_recent
         if direction in [UP, DOWN]:
             match = lambda n: n.x <= self.x_center <= n.x_end
         else:
             match = lambda n: n.y <= self.y_center <= n.y_end
-        try:
-            return next(n for n in candidates if match(n))
-        except StopIteration:
-            return None
+        return next(n for n in nodes if match(n))
 
     @property
     def close_up(self):
