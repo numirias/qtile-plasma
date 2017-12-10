@@ -1,9 +1,13 @@
 language: python
 python:
-    - "3.6"
+  - "3.6"
+addons:
+  apt:
+    packages:
+      - xserver-xephyr
 install:
-    - make
+  - make
 script:
-    - make test
-    - make lint
-    - make codecov
+  - make test
+  - make lint
+  - make codecov

@@ -1,0 +1,3 @@
+[submodule "lib/qtile"]
+	path = lib/qtile
+	url = https://github.com/qtile/qtile
