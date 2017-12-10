@@ -116,85 +116,114 @@ class Plasma(Layout):
         self.group.focus(self.focused)
 
     def cmd_next(self):
+        """Focus next window."""
         self.focus_node(self.focused_node.next_leaf)
 
     def cmd_previous(self):
+        """Focus previous window."""
         self.focus_node(self.focused_node.prev_leaf)
 
     def cmd_left(self):
+        """Focus window to the left."""
         self.focus_node(self.focused_node.close_left)
 
     def cmd_right(self):
+        """Focus window to the right."""
         self.focus_node(self.focused_node.close_right)
 
     def cmd_up(self):
+        """Focus window above."""
         self.focus_node(self.focused_node.close_up)
 
     def cmd_down(self):
+        """Focus window below."""
         self.focus_node(self.focused_node.close_down)
 
     def cmd_move_left(self):
+        """Move current window left."""
         self.focused_node.move_left()
         self.refocus()
 
     def cmd_move_right(self):
+        """Move current window right."""
         self.focused_node.move_right()
         self.refocus()
 
     def cmd_move_up(self):
+        """Move current window up."""
         self.focused_node.move_up()
         self.refocus()
 
     def cmd_move_down(self):
+        """Move current window down."""
         self.focused_node.move_down()
         self.refocus()
 
     def cmd_integrate_left(self):
+        """Integrate current window left."""
         self.focused_node.integrate_left()
         self.refocus()
 
     def cmd_integrate_right(self):
+        """Integrate current window right."""
         self.focused_node.integrate_right()
         self.refocus()
 
     def cmd_integrate_up(self):
+        """Integrate current window up."""
         self.focused_node.integrate_up()
         self.refocus()
 
     def cmd_integrate_down(self):
+        """Integrate current window down."""
         self.focused_node.integrate_down()
         self.refocus()
 
     def cmd_split_horizontal(self):
+        """Add next window horizontally."""
         self.split_orient = HORIZONTAL
 
     def cmd_split_vertical(self):
+        """Add next window vertically."""
         self.split_orient = VERTICAL
 
-    def cmd_size(self, size):
-        self.focused_node.size = size
+    def cmd_size(self, val):
+        """Change size of current window.
+
+        (It's recommended to use `width()`/`height()` instead.)
+        """
+        self.focused_node.size = val
         self.refocus()
 
     def cmd_width(self, val):
+        """Set width of current window."""
         self.focused_node.width = val
         self.refocus()
 
     def cmd_height(self, val):
+        """Set height of current window."""
         self.focused_node.height = val
         self.refocus()
 
     def cmd_reset_size(self):
+        """Reset size of current window to automatic (relative) sizing."""
         self.focused_node.reset_size()
         self.refocus()
 
     def cmd_grow(self, amt):
+        """Grow size of current window.
+
+        (It's recommended to use `grow_width()`/`grow_height()` instead.)
+        """
         self.focused_node.size += amt
         self.refocus()
 
     def cmd_grow_width(self, amt):
+        """Grow width of current window."""
         self.focused_node.width += amt
         self.refocus()
 
     def cmd_grow_height(self, amt):
+        """Grow height of current window."""
         self.focused_node.height += amt
         self.refocus()
