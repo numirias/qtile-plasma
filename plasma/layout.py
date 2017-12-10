@@ -6,6 +6,10 @@ from libqtile.layout.base import Layout
 from .node import Node, HORIZONTAL, VERTICAL
 
 
+def convert_names(tree):
+    return [convert_names(n) if isinstance(n, list) else n.payload.name
+            for n in tree]
+
 class Plasma(Layout):
 
     defaults = [
@@ -27,6 +31,11 @@ class Plasma(Layout):
         self.root = Node()
         self.focused = None
         self.split_orient = None
+
+    def info(self):
+        info = super().info()
+        info['tree'] = convert_names(self.root.tree)
+        return info
 
     def clone(self, group):
         clone = copy.copy(self)
@@ -107,10 +116,10 @@ class Plasma(Layout):
         self.group.focus(self.focused)
 
     def cmd_next(self):
-        self.focus_node(self.focused_node.prev_leaf)
+        self.focus_node(self.focused_node.next_leaf)
 
     def cmd_previous(self):
-        self.focus_node(self.focused_node.next_leaf)
+        self.focus_node(self.focused_node.prev_leaf)
 
     def cmd_left(self):
         self.focus_node(self.focused_node.close_left)
@@ -178,12 +187,8 @@ class Plasma(Layout):
         self.focused_node.reset_size()
         self.refocus()
 
-    def cmd_grow(self, amt, orthogonal=False):
-        # Should be deprecated (replaced by grow_width, grow_height)
-        if not orthogonal:
-            self.focused_node.width += amt
-        else:
-            self.focused_node.height += amt
+    def cmd_grow(self, amt):
+        self.focused_node.size += amt
         self.refocus()
 
     def cmd_grow_width(self, amt):
@@ -193,5 +198,3 @@ class Plasma(Layout):
     def cmd_grow_height(self, amt):
         self.focused_node.height += amt
         self.refocus()
-
-    # TODO Grow-left, grow-right, etc.

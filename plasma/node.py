@@ -248,7 +248,6 @@ class Node:
 
     @property
     def x_center(self):
-        # TODO x_center
         return self.x + self.width / 2
 
     @property
