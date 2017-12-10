@@ -18,7 +18,7 @@ Plasma works on a tree structure. Each tree node represents a container whose ch
 Install the package, e.g. via pip:
 
 ```
-pip install qtile-plasma
+pip install --upgrade qtile-plasma
 ```
     
 Add the layout to your config (`~/.config/qtile/config.py`):
