@@ -19,10 +19,10 @@ def grid(qtile):
     qtile.testWindow('a')
     qtile.testWindow('b')
     qtile.c.layout.previous()
-    qtile.c.layout.split_vertical()
+    qtile.c.layout.mode_vertical()
     qtile.testWindow('c')
     qtile.c.layout.right()
-    qtile.c.layout.split_vertical()
+    qtile.c.layout.mode_vertical()
     qtile.testWindow('d')
 
 class Config:
@@ -96,9 +96,9 @@ class TestLayout:
     @plasma_config
     def test_split_directions(self, qtile):
         qtile.testWindow('a')
-        qtile.c.layout.split_horizontal()
+        qtile.c.layout.mode_horizontal()
         qtile.testWindow('b')
-        qtile.c.layout.split_vertical()
+        qtile.c.layout.mode_vertical()
         qtile.testWindow('c')
         assert tree(qtile) == ['a', ['b', 'c']]
 
@@ -148,22 +148,22 @@ class TestLayout:
     def test_sizes(self, qtile):
         qtile.testWindow('a')
         qtile.testWindow('b')
-        qtile.c.layout.split_vertical()
+        qtile.c.layout.mode_vertical()
         qtile.testWindow('c')
         info = qtile.c.window.info()
         assert info['x'] == 400
         assert info['y'] == 300
-        assert info['width'] == 398
-        assert info['height'] == 298
+        assert info['width'] == 400 - 2
+        assert info['height'] == 300 - 2
         qtile.c.layout.grow_height(50)
         info = qtile.c.window.info()
-        assert info['height'] == 298 + 50
+        assert info['height'] == 300 - 2 + 50
         qtile.c.layout.grow_width(50)
         info = qtile.c.window.info()
-        assert info['width'] == 398 + 50
+        assert info['width'] == 400 - 2 + 50
         qtile.c.layout.reset_size()
         info = qtile.c.window.info()
-        assert info['height'] == 298
+        assert info['height'] == 300 - 2
         qtile.c.layout.height(300)
         info = qtile.c.window.info()
         assert info['height'] == 300 - 2
@@ -186,3 +186,19 @@ class TestLayout:
         assert tree(qtile) == ['b']
         qtile.kill_window(b)
         assert tree(qtile) == []
+
+    @plasma_config
+    def test_split_mode(self, qtile):
+        qtile.testWindow('a')
+        qtile.testWindow('b')
+        qtile.c.layout.mode_horizontal_split()
+        qtile.testWindow('c')
+        assert qtile.c.window.info()['width'] == 200 - 2
+        qtile.c.layout.mode_vertical()
+        qtile.testWindow('d')
+        assert qtile.c.window.info()['height'] == 300 - 2
+        qtile.testWindow('e')
+        assert qtile.c.window.info()['height'] == 200 - 2
+        qtile.c.layout.mode_vertical_split()
+        qtile.testWindow('f')
+        assert qtile.c.window.info()['height'] == 100 - 2

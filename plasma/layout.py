@@ -3,15 +3,18 @@ import copy
 from xcffib.xproto import StackMode
 from libqtile.layout.base import Layout
 
-from .node import Node, HORIZONTAL, VERTICAL
+from .node import Node, AddMode
 
-
-def convert_names(tree):
-    return [convert_names(n) if isinstance(n, list) else n.payload.name
-            for n in tree]
 
 class Plasma(Layout):
+    """A flexible tree-based layout.
 
+    Each tree node represents a container whose children are aligned either
+    horizontally or vertically. Each window is attached to a leaf of the tree
+    and takes either a calculated relative amount or a custom absolute amount
+    of space in its parent container. Windows can be resized, rearranged and
+    integrated into other containers.
+    """
     defaults = [
         ('name', 'Plasma', 'Layout name'),
         ('border_normal', '#333333', 'Unfocused window border color'),
@@ -26,15 +29,24 @@ class Plasma(Layout):
     ]
 
     def __init__(self, **config):
-        super().__init__(**config)
+        Layout.__init__(self, **config)
         self.add_defaults(Plasma.defaults)
         self.root = Node()
         self.focused = None
-        self.split_orient = None
+        self.add_mode = None
+
+    @staticmethod
+    def convert_names(tree):
+        return [Plasma.convert_names(n) if isinstance(n, list) else
+                n.payload.name for n in tree]
+
+    @property
+    def focused_node(self):
+        return self.root.find_payload(self.focused)
 
     def info(self):
         info = super().info()
-        info['tree'] = convert_names(self.root.tree)
+        info['tree'] = self.convert_names(self.root.tree)
         return info
 
     def clone(self, group):
@@ -42,19 +54,17 @@ class Plasma(Layout):
         clone.group = group
         clone.root = Node()
         clone.focused = None
-        clone.split_orient = None
+        clone.add_mode = None
         return clone
 
     def add(self, client):
-        node = Node(client)
-        if self.focused is None or self.focused_node is None:
-            self.root.add_child(node)
-            return
-        if self.split_orient in (None, self.focused_node.parent.orient):
-            self.focused_node.parent.add_child_after(node, self.focused_node)
+        current = self.focused_node
+        new_node = Node(client)
+        if self.focused is None or current is None:
+            self.root.add_child(new_node)
         else:
-            self.focused_node.split_with(node)
-        self.split_orient = None
+            current.add_node(new_node, self.add_mode)
+        self.add_mode = None
 
     def remove(self, client):
         self.root.find_payload(client).remove()
@@ -65,9 +75,8 @@ class Plasma(Layout):
         self.root.width = screen.width
         self.root.height = screen.height
         node = self.root.find_payload(client)
-        border_width = \
-            self.border_width_single if self.root.tree == [node] else \
-            self.border_width
+        border_width = self.border_width_single if self.root.tree == [node] \
+            else self.border_width
         border_color = getattr(self, 'border_' +
                                ('focus' if client.has_focus else 'normal') +
                                ('' if node.flexible else '_fixed'))
@@ -107,10 +116,6 @@ class Plasma(Layout):
         if node is None:
             return
         self.group.focus(node.payload)
-
-    @property
-    def focused_node(self):
-        return self.root.find_payload(self.focused)
 
     def refocus(self):
         self.group.focus(self.focused)
@@ -179,13 +184,25 @@ class Plasma(Layout):
         self.focused_node.integrate_down()
         self.refocus()
 
-    def cmd_split_horizontal(self):
-        """Add next window horizontally."""
-        self.split_orient = HORIZONTAL
+    def cmd_mode_horizontal(self):
+        """Next window will be added horizontally."""
+        self.add_mode = AddMode.HORIZONTAL
 
-    def cmd_split_vertical(self):
-        """Add next window vertically."""
-        self.split_orient = VERTICAL
+    def cmd_mode_vertical(self):
+        """Next window will be added vertically."""
+        self.add_mode = AddMode.VERTICAL
+
+    def cmd_mode_horizontal_split(self):
+        """Next window will be added horizontally, splitting space of current
+        window.
+        """
+        self.add_mode = AddMode.HORIZONTAL | AddMode.SPLIT
+
+    def cmd_mode_vertical_split(self):
+        """Next window will be added vertically, splitting space of current
+        window.
+        """
+        self.add_mode = AddMode.VERTICAL | AddMode.SPLIT
 
     def cmd_size(self, val):
         """Change size of current window.

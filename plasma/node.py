@@ -1,30 +1,42 @@
 from collections import namedtuple
 from datetime import datetime
-from enum import Enum, auto
+from enum import Enum, Flag, auto
 from math import isclose
 
 
-HORIZONTAL = False
-VERTICAL = True
-Dimensions = namedtuple('Dimensions', 'x y width height')
 Point = namedtuple('Point', 'x y')
+Dimensions = namedtuple('Dimensions', 'x y width height')
+
+class Orient(Flag):
+    HORIZONTAL = 0
+    VERTICAL = 1
+
+HORIZONTAL, VERTICAL = Orient
 
 class Direction(Enum):
-
     UP = auto()
     DOWN = auto()
     LEFT = auto()
     RIGHT = auto()
 
     @property
-    def orientation(self):
-        return HORIZONTAL if self.name in ['LEFT', 'RIGHT'] else VERTICAL
+    def orient(self):
+        return HORIZONTAL if self in [self.LEFT, self.RIGHT] else VERTICAL
 
     @property
     def offset(self):
-        return 1 if self.name in ['RIGHT', 'DOWN'] else -1
+        return 1 if self in [self.RIGHT, self.DOWN] else -1
 
-UP, DOWN, LEFT, RIGHT = list(Direction)
+UP, DOWN, LEFT, RIGHT = Direction
+
+class AddMode(Flag):
+    HORIZONTAL = 0
+    VERTICAL = 1
+    SPLIT = auto()
+
+    @property
+    def orient(self):
+        return VERTICAL if self & self.VERTICAL else HORIZONTAL
 
 border_check = {
     UP: lambda a, b: isclose(a.y, b.y_end),
@@ -33,37 +45,11 @@ border_check = {
     RIGHT: lambda a, b: isclose(a.x_end, b.x),
 }
 
-def fit_into(nodes, space):
-    """Resize nodes to fit them into the specified space."""
-    if not nodes:
-        return
-    occupied = sum(n.min_size for n in nodes)
-    if space >= occupied and any(n.flexible for n in nodes):
-        # If any flexible node exists, it will occupy the space automatically,
-        # not requiring any action.
-        return
-    nodes_left = nodes.copy()
-    space_left = space
-    if space < occupied:
-        for node in nodes:
-            if node.min_size_bound != node.min_size:
-                continue
-            # Substract nodes that are already at their minimal possible size
-            # because they can't be shrinked any further.
-            space_left -= node.min_size
-            nodes_left.remove(node)
-    if not nodes_left:
-        return
-    factor = space_left / sum(n.size for n in nodes_left)
-    for node in nodes_left:
-        new_size = node.size * factor
-        if node.fixed:
-            node._size = new_size  # pylint: disable=protected-access
-        for child in node.children:
-            fit_into(child.children, new_size)
-
 class Node:
+    """A tree node.
 
+    Each node represents a container that can hold a payload and child nodes.
+    """
     min_size_default = 100
     root_orient = HORIZONTAL
 
@@ -85,10 +71,6 @@ class Node:
         return '<Node %s %x>' % (info, id(self))
 
     @property
-    def is_root(self):
-        return self.parent is None
-
-    @property
     def root(self):
         try:
             return self.parent.root
@@ -96,16 +78,24 @@ class Node:
             return self
 
     @property
-    def index(self):
-        return self.parent.children.index(self)
-
-    @property
-    def siblings(self):
-        return [c for c in self.parent.children if c is not self]
+    def is_root(self):
+        return self.parent is None
 
     @property
     def is_leaf(self):
         return not self.children
+
+    @property
+    def index(self):
+        return self.parent.children.index(self)
+
+    @property
+    def tree(self):
+        return [c.tree if c.children else c for c in self.children]
+
+    @property
+    def siblings(self):
+        return [c for c in self.parent.children if c is not self]
 
     @property
     def first_leaf(self):
@@ -144,10 +134,17 @@ class Node:
         return self.parent.children[idx].first_leaf
 
     @property
+    def all_leafs(self):
+        if self.is_leaf:
+            yield self
+        for child in self.children:
+            yield from child.all_leafs
+
+    @property
     def orient(self):
         if self.is_root:
             return self.root_orient
-        return not self.parent.orient
+        return ~self.parent.orient
 
     @property
     def horizontal(self):
@@ -156,21 +153,6 @@ class Node:
     @property
     def vertical(self):
         return self.orient is VERTICAL
-
-    @property
-    def tree(self):
-        return [c.tree if c.children else c for c in self.children]
-
-    @property
-    def all_leafs(self):
-        if self.is_leaf:
-            yield self
-        for child in self.children:
-            yield from child.all_leafs
-
-    @property
-    def size_offset(self):
-        return sum(c.size for c in self.parent.children[:self.index])
 
     @property
     def x(self):
@@ -293,6 +275,7 @@ class Node:
 
     @property
     def size(self):
+        """Return amount of space taken in parent container."""
         if self.is_root:
             return None
         if self.fixed:
@@ -315,21 +298,46 @@ class Node:
         self.force_size(val)
 
     def force_size(self, val):
-        fit_into(self.siblings, self.parent.capacity - val)
+        """Set size without considering available space."""
+        self.fit_into(self.siblings, self.parent.capacity - val)
         if val != 0:
             if self.children:
-                fit_into([self], val)
+                self.fit_into([self], val)
             self._size = val
 
     @property
-    def flexible(self):
-        """A node is flexible if its size isn't (explicitly or implictly)
-        determined.
-        """
-        if self.fixed:
-            return False
-        return all((any(gc.flexible for gc in c.children) or c.is_leaf)
-                   for c in self.children)
+    def size_offset(self):
+        return sum(c.size for c in self.parent.children[:self.index])
+
+    @staticmethod
+    def fit_into(nodes, space):
+        """Resize nodes to fit them into the available space."""
+        if not nodes:
+            return
+        occupied = sum(n.min_size for n in nodes)
+        if space >= occupied and any(n.flexible for n in nodes):
+            # If any flexible node exists, it will occupy the space
+            # automatically, not requiring any action.
+            return
+        nodes_left = nodes.copy()
+        space_left = space
+        if space < occupied:
+            for node in nodes:
+                if node.min_size_bound != node.min_size:
+                    continue
+                # Substract nodes that are already at their minimal possible
+                # size because they can't be shrinked any further.
+                space_left -= node.min_size
+                nodes_left.remove(node)
+        if not nodes_left:
+            return
+        factor = space_left / sum(n.size for n in nodes_left)
+        for node in nodes_left:
+            new_size = node.size * factor
+            if node.fixed:
+                node._size = new_size  # pylint: disable=protected-access
+            for child in node.children:
+                Node.fit_into(child.children, new_size)
 
     @property
     def fixed(self):
@@ -360,10 +368,20 @@ class Node:
         # TODO Deprecate grow
         if self.is_root:
             return
-        if orient is (not self.parent.orient):
+        if orient is ~self.parent.orient:
             self.parent.grow(amt)
             return
         self.size += amt
+
+    @property
+    def flexible(self):
+        """A node is flexible if its size isn't (explicitly or implictly)
+        determined.
+        """
+        if self.fixed:
+            return False
+        return all((any(gc.flexible for gc in c.children) or c.is_leaf)
+                   for c in self.children)
 
     def access(self):
         self.last_accessed = datetime.now()
@@ -376,7 +394,7 @@ class Node:
         """Return adjacent leaf node in specified direction."""
         if self.is_root:
             return None
-        if direction.orientation is self.parent.orient:
+        if direction.orient is self.parent.orient:
             target_idx = self.index + direction.offset
             if 0 <= target_idx < len(self.parent.children):
                 return self.parent.children[target_idx].recent_leaf
@@ -445,7 +463,6 @@ class Node:
         return self.close_neighbor(RIGHT)
 
     def add_child(self, node, idx=None):
-        # TODO Auto-split-with if required
         if idx is None:
             idx = len(self.children)
         self.children.insert(idx, node)
@@ -453,7 +470,7 @@ class Node:
         if len(self.children) == 1:
             return
         total = self.capacity
-        fit_into(node.siblings, total - (total / len(self.children)))
+        self.fit_into(node.siblings, total - (total / len(self.children)))
 
     def add_child_after(self, new, old):
         self.add_child(new, idx=self.children.index(old)+1)
@@ -478,17 +495,38 @@ class Node:
         new.parent = self
         new._size = old._size  # pylint: disable=protected-access
 
-    def split_with(self, node):
+    def flip_with(self, node):
+        """Join with node in a new, orthogonal container."""
         container = Node()
         self.parent.replace_child(self, container)
         self.reset_size()
         for child in [self, node]:
             container.add_child(child)
 
+    def add_node(self, node, mode=None):
+        """Add node according to the mode.
+
+        This can result in adding it as a child, joining with it in a new,
+        flipped sub-container or splitting the space with it.
+        """
+        if self.is_root:
+            self.add_child(node)
+        elif mode is None:
+            self.parent.add_child_after(node, self)
+        elif mode.orient is self.parent.orient:
+            if mode & AddMode.SPLIT:
+                node._size = 0   # pylint: disable=protected-access
+                self.parent.add_child_after(node, self)
+                self._size = node._size = self.size / 2
+            else:
+                self.parent.add_child_after(node, self)
+        else:
+            self.flip_with(node)
+
     def move(self, direction):
         if self.is_root:
             return
-        if direction.orientation is self.parent.orient:
+        if direction.orient is self.parent.orient:
             old_idx = self.index
             new_idx = old_idx + direction.offset
             if 0 <= new_idx < len(self.parent.children):
@@ -526,7 +564,7 @@ class Node:
             self.integrate(direction)
 
     def integrate(self, direction):
-        if direction.orientation != self.parent.orient:
+        if direction.orient != self.parent.orient:
             self._move_and_integrate(direction)
             return
         target_idx = self.index + direction.offset
@@ -537,7 +575,7 @@ class Node:
         target = self.parent.children[target_idx]
         self.parent.remove_child(self)
         if target.is_leaf:
-            target.split_with(self)
+            target.flip_with(self)
         else:
             target.add_child(self)
 

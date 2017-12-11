@@ -1,7 +1,7 @@
 from pytest import approx
 
 from plasma.debug import draw, tree, info
-from plasma.node import Node, VERTICAL, HORIZONTAL
+from plasma.node import Node, VERTICAL, HORIZONTAL, AddMode
 
 from .conftest import Nodes
 
@@ -85,14 +85,14 @@ class TestPlasma:
         a, b, c, d = Nodes('a b c d')
         root.add_child(a)
         root.add_child(b)
-        b.split_with(c)
+        b.flip_with(c)
         assert a.width == 60
         assert b.width == 60
         assert c.width == 60
         assert a.height == 50
         assert b.height == 25
         assert c.height == 25
-        b.split_with(d)
+        b.flip_with(d)
         assert b.width == 30
         assert d.width == 30
 
@@ -238,9 +238,9 @@ class TestPlasma:
         e.integrate_left()
         assert root.tree == [[c, e], [b, a, d]]
         f = Node('f')
-        a.split_with(f)
+        a.flip_with(f)
         g = Node('g')
-        a.split_with(g)
+        a.flip_with(g)
         g.integrate_left()
         assert root.tree == [[c, e, g], [b, [a, f], d]]
 
@@ -280,7 +280,7 @@ class TestPlasma:
     def test_last_access(self, grid):
         a, b, c, d, e = grid
         f = Node('f')
-        a.split_with(f)
+        a.flip_with(f)
         d.access()
         assert b.down is d
         b.access()
@@ -304,7 +304,7 @@ class TestPlasma:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        b.split_with(c)
+        b.flip_with(c)
 
     def test_resize(self, root, grid):
         a, b, c, d, e = grid
@@ -384,8 +384,8 @@ class TestPlasma:
         root.add_child(b)
         root.add_child(c)
         root.add_child(d)
-        d.split_with(e)
-        e.split_with(f)
+        d.flip_with(e)
+        e.flip_with(f)
         b.size = b.size
         e.size = e.size
         f.size = f.size
@@ -475,7 +475,7 @@ class TestPlasma:
         root.add_child(a)
         root.add_child(b)
         b.grow(-20)
-        b.split_with(c)
+        b.flip_with(c)
         assert b.parent.size == 40
         assert b.size == c.size == 25
         b.remove()
@@ -499,7 +499,7 @@ class TestPlasma:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        b.split_with(c)
+        b.flip_with(c)
         b.grow(10, HORIZONTAL)
         assert b.parent.size == 70
         assert b.size == c.size == 25
@@ -600,7 +600,7 @@ class TestPlasma:
 
     def test_resize_bubbles2(self, root, complex_grid):
         a, b, c, d, e, f, g = complex_grid
-        c.split_with(Node('h'))
+        c.flip_with(Node('h'))
         f.size += 10
         g.size += 10
         assert f.size == g.size == 10
@@ -622,7 +622,7 @@ class TestPlasma:
     def test_resize_bubbles3(self, root, complex_grid):
         a, b, c, d, e, f, g = complex_grid
         h = Node('h')
-        c.split_with(h)
+        c.flip_with(h)
         f.size += 10
         g.size += 10
         assert f.size == g.size == c.size == h.size == 10
@@ -644,26 +644,26 @@ class TestPlasma:
                                            'pd2_abs')
         root.add_child(a)
         root.add_child(b)
-        b.split_with(c)
+        b.flip_with(c)
         b.parent.add_child(e)
         b.parent.add_child(g)
-        c.split_with(d)
-        e.split_with(f)
-        g.split_with(h)
+        c.flip_with(d)
+        e.flip_with(f)
+        g.flip_with(h)
 
         b.parent.add_child(nu1)
-        nu1.split_with(mu)
-        nu1.split_with(nd)
-        nu1.split_with(nu2)
-        mu.split_with(md1)
-        md1.split_with(md2)
+        nu1.flip_with(mu)
+        nu1.flip_with(nd)
+        nu1.flip_with(nu2)
+        mu.flip_with(md1)
+        md1.flip_with(md2)
 
         b.parent.add_child(ou1)
-        ou1.split_with(pu)
-        ou1.split_with(od)
-        ou1.split_with(ou2)
-        pu.split_with(pd1)
-        pd1.split_with(pd2)
+        ou1.flip_with(pu)
+        ou1.flip_with(od)
+        ou1.flip_with(ou2)
+        pu.flip_with(pd1)
+        pd1.flip_with(pd2)
 
         def assert_first_state():
             assert b.parent.size == 60
@@ -768,8 +768,8 @@ class TestPlasma:
         a, b, c, d = Nodes('a b c d')
         root.add_child(a)
         root.add_child(b)
-        a.split_with(c)
-        b.split_with(d)
+        a.flip_with(c)
+        b.flip_with(d)
         assert a.close_up is None
         assert a.close_left is None
         assert a.close_right is b
@@ -798,14 +798,14 @@ class TestPlasma:
         a, b, c, d, e = grid
         f, g, h, i, j, k, L = Nodes('f g h i j k l')
         root.add_child(f)
-        d.split_with(h)
-        a.split_with(i)
-        e.split_with(j)
+        d.flip_with(h)
+        a.flip_with(i)
+        e.flip_with(j)
         e.parent.add_child(k)
-        f.split_with(L)
+        f.flip_with(L)
         f.height = 10
         assert b.close_down is d
-        b.split_with(g)
+        b.flip_with(g)
         assert b.close_down is c
         assert d.close_right is e
         assert e.close_left is d
@@ -819,7 +819,7 @@ class TestPlasma:
         root.height += 30
         a, b, c, d = small_grid
         e, f, g = Nodes('e f g')
-        c.split_with(f)
+        c.flip_with(f)
         b.parent.add_child(e)
         c.parent.add_child(g)
         assert g.close_down is e
@@ -856,6 +856,32 @@ class TestPlasma:
         assert a.close_right is c
         b.access()
         assert a.close_right is b
+
+    def test_add_node(self, root):
+        a, b, c, d, e, f, g = Nodes('a b c d e f g')
+        root.add_node(a)
+        assert root.tree == [a]
+        root.add_node(b)
+        assert root.tree == [a, b]
+        a.add_node(c)
+        assert root.tree == [a, c, b]
+        c.add_node(d, mode=AddMode.HORIZONTAL)
+        info(root)
+        assert root.tree == [a, c, d, b]
+        root.remove_child(d)
+        c.add_node(d, mode=AddMode.VERTICAL)
+        c.parent.add_child_after
+        info(root)
+        assert root.tree == [a, [c, d], b]
+        c.add_node(e, mode=AddMode.VERTICAL)
+        assert root.tree == [a, [c, e, d], b]
+        assert a.width == 40
+        a.add_node(f, mode=AddMode.HORIZONTAL | AddMode.SPLIT)
+        assert root.tree == [a, f, [c, e, d], b]
+        assert a.width == f.width == 20
+        assert c.parent.width == b.width == 40
+        a.add_node(g, mode=AddMode.VERTICAL | AddMode.SPLIT)
+        assert root.tree == [[a, g], f, [c, e, d], b]
 
 class TestDebugging:
 

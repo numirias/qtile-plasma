@@ -135,12 +135,22 @@ The layout exposes the following commands:
     <td>Integrate current window down.</td>
   </tr>
   <tr>
-    <td><code>split_horizontal()</code></td>
-    <td>Add next window horizontally.</td>
+    <td><code>mode_horizontal()</code></td>
+    <td>Next window will be added horizontally.</td>
   </tr>
   <tr>
-    <td><code>split_vertical()</code></td>
-    <td>Add next window vertically.</td>
+    <td><code>mode_vertical()</code></td>
+    <td>Next window will be added vertically.</td>
+  </tr>
+  <tr>
+    <td><code>mode_horizontal_split()</code></td>
+    <td>Next window will be added horizontally, splitting space of current
+window.</td>
+  </tr>
+  <tr>
+    <td><code>mode_vertical_split()</code></td>
+    <td>Next window will be added vertically, splitting space of current
+window.</td>
   </tr>
   <tr>
     <td><code>size(val)</code></td>
