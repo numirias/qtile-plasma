@@ -202,3 +202,18 @@ class TestLayout:
         qtile.c.layout.mode_vertical_split()
         qtile.testWindow('f')
         assert qtile.c.window.info()['height'] == 100 - 2
+
+    @plasma_config
+    def test_recent(self, qtile):
+        qtile.testWindow('a')
+        qtile.testWindow('b')
+        qtile.testWindow('c')
+        assertFocused(qtile, 'c')
+        qtile.c.layout.recent()
+        assertFocused(qtile, 'b')
+        qtile.c.layout.recent()
+        assertFocused(qtile, 'c')
+        qtile.c.layout.next()
+        assertFocused(qtile, 'a')
+        qtile.c.layout.recent()
+        assertFocused(qtile, 'c')

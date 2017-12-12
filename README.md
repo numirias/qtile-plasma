@@ -89,6 +89,11 @@ The layout exposes the following commands:
     <td>Focus previous window.</td>
   </tr>
   <tr>
+    <td><code>recent()</code></td>
+    <td>Focus most recently focused window.<br>
+(Toggles between the two latest active windows.)</td>
+  </tr>
+  <tr>
     <td><code>left()</code></td>
     <td>Focus window to the left.</td>
   </tr>
@@ -156,9 +161,8 @@ window.</td>
   </tr>
   <tr>
     <td><code>size(val)</code></td>
-    <td>Change size of current window.
-
-(It's recommended to use `width()`/`height()` instead.)</td>
+    <td>Change size of current window.<br>
+(It's recommended to use <code>width()</code>/<code>height()</code> instead.)</td>
   </tr>
   <tr>
     <td><code>width(val)</code></td>
@@ -174,9 +178,8 @@ window.</td>
   </tr>
   <tr>
     <td><code>grow(amt)</code></td>
-    <td>Grow size of current window.
-
-(It's recommended to use `grow_width()`/`grow_height()` instead.)</td>
+    <td>Grow size of current window.<br>
+(It's recommended to use <code>grow_width()</code>/<code>grow_height()</code> instead.)</td>
   </tr>
   <tr>
     <td><code>grow_width(amt)</code></td>

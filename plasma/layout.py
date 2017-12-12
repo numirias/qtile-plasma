@@ -128,6 +128,15 @@ class Plasma(Layout):
         """Focus previous window."""
         self.focus_node(self.focused_node.prev_leaf)
 
+    def cmd_recent(self):
+        """Focus most recently focused window.
+
+        (Toggles between the two latest active windows.)
+        """
+        nodes = [n for n in self.root.all_leafs if n is not self.focused_node]
+        most_recent = max(nodes, key=lambda n: n.last_accessed)
+        self.focus_node(most_recent)
+
     def cmd_left(self):
         """Focus window to the left."""
         self.focus_node(self.focused_node.close_left)

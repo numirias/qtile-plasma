@@ -1,6 +1,14 @@
-"""Insert documentation for layout commands into readme file."""
+"""Update documentation in readme.
+
+This tool extracts the documentation (docstrings) for all layout commands
+(startings with "cmd_") from the layout class and inserts them as a table into
+the readme file, in the marked area.
+
+It should be run with every API change.
+"""
 
 import ast
+import re
 
 
 readme_path = 'README.md'
@@ -18,11 +26,14 @@ def row(text):
 def col(text):
     return '    <td>%s</td>\n' % text
 
-def function(name, args):
-    return '%s(%s)' % (name, ', '.join(args))
-
 def code(text):
     return '<code>%s</code>' % text
+
+def function_name(name, args):
+    return '%s(%s)' % (name, ', '.join(args))
+
+def function_desc(text):
+    return re.sub('`([^`]*)`', code('\\1'), text.replace('\n\n', '<br>\n'))
 
 def main():
     with open(readme_path) as f:
@@ -42,7 +53,10 @@ def main():
         name = node.name[4:]
         args = [a.arg for a in node.args.args[1:]]
         docstring = ast.get_docstring(node)
-        rows += row(col(code(function(name, args))) + col(docstring))
+        rows += row(
+            col(code(function_name(name, args))) +
+            col(function_desc(docstring))
+        )
     text_table = table(rows)
 
     with open(readme_path, 'w') as f:
