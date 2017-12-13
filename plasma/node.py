@@ -45,6 +45,9 @@ border_check = {
     RIGHT: lambda a, b: isclose(a.x_end, b.x),
 }
 
+class NotRestorableError(Exception):
+    pass
+
 class Node:
     """A tree node.
 
@@ -63,12 +66,21 @@ class Node:
         self.children = []
         self.last_accessed = datetime.min
         self.parent = None
+        self.restorables = {}
 
     def __repr__(self):
         info = self.payload or ''
         if self.children:
             info += ' +%d' % len(self.children)
         return '<Node %s %x>' % (info, id(self))
+
+    def __contains__(self, node):
+        if node is self:
+            return True
+        for child in self.children:
+            if node in child:
+                return True
+        return False
 
     @property
     def root(self):
@@ -292,6 +304,9 @@ class Node:
     def size(self, val):
         if self.is_root or not self.siblings:
             return
+        if val is None:
+            self.reset_size()
+            return
         occupied = sum(s.min_size_bound for s in self.siblings)
         val = max(min(val, self.parent.capacity - occupied),
                   self.min_size_bound)
@@ -299,11 +314,12 @@ class Node:
 
     def force_size(self, val):
         """Set size without considering available space."""
-        self.fit_into(self.siblings, self.parent.capacity - val)
-        if val != 0:
-            if self.children:
-                self.fit_into([self], val)
-            self._size = val
+        Node.fit_into(self.siblings, self.parent.capacity - val)
+        if val == 0:
+            return
+        if self.children:
+            Node.fit_into([self], val)
+        self._size = val
 
     @property
     def size_offset(self):
@@ -365,7 +381,7 @@ class Node:
         self._size = None
 
     def grow(self, amt, orient=None):
-        # TODO Deprecate grow
+        # TODO Deprecate grow, it should be replaced by size assignment
         if self.is_root:
             return
         if orient is ~self.parent.orient:
@@ -463,6 +479,7 @@ class Node:
         return self.close_neighbor(RIGHT)
 
     def add_child(self, node, idx=None):
+        # TODO Currently we assume that the node has no size.
         if idx is None:
             idx = len(self.children)
         self.children.insert(idx, node)
@@ -470,22 +487,22 @@ class Node:
         if len(self.children) == 1:
             return
         total = self.capacity
-        self.fit_into(node.siblings, total - (total / len(self.children)))
+        Node.fit_into(node.siblings, total - (total / len(self.children)))
 
     def add_child_after(self, new, old):
         self.add_child(new, idx=self.children.index(old)+1)
 
     def remove_child(self, node):
+        node._save_restore_state()  # pylint: disable=W0212
         node.force_size(0)
         self.children.remove(node)
-        if len(self.children) != 1:
-            return
-        if not self.is_root:
-            # Collapse tree with a single child
-            self.parent.replace_child(self, self.children[0])
-        else:
-            # A single child doesn't need an absolute size
-            self.children[0].reset_size()
+        if len(self.children) == 1:
+            if self.is_root:
+                # A single child doesn't need a fixed size
+                self.children[0].reset_size()
+            else:
+                # Collapse tree with a single child
+                self.parent.replace_child(self, self.children[0])
 
     def remove(self):
         self.parent.remove_child(self)
@@ -495,19 +512,19 @@ class Node:
         new.parent = self
         new._size = old._size  # pylint: disable=protected-access
 
-    def flip_with(self, node):
+    def flip_with(self, node, reverse=False):
         """Join with node in a new, orthogonal container."""
         container = Node()
         self.parent.replace_child(self, container)
         self.reset_size()
-        for child in [self, node]:
+        for child in [node, self] if reverse else [self, node]:
             container.add_child(child)
 
     def add_node(self, node, mode=None):
         """Add node according to the mode.
 
-        This can result in adding it as a child, joining with it in a new,
-        flipped sub-container or splitting the space with it.
+        This can result in adding it as a child, joining with it in a new
+        flipped sub-container, or splitting the space with it.
         """
         if self.is_root:
             self.add_child(node)
@@ -522,6 +539,41 @@ class Node:
                 self.parent.add_child_after(node, self)
         else:
             self.flip_with(node)
+
+    def restore(self, node):
+        """Restore node.
+
+        Try to add the node in a place where a node with the same payload
+        has previously been.
+        """
+        try:
+            parent, idx, sizes, flip = self.root.restorables[node.payload]
+        except KeyError:
+            raise NotRestorableError()
+        if parent not in self.root:
+            # Don't restore at a parent that's not part of the tree anymore
+            raise NotRestorableError()
+        node.reset_size()
+        if flip:
+            parent.flip_with(node, reverse=(idx == 0))
+            node.size, parent.size = sizes
+        else:
+            parent.add_child(node, idx=idx)
+            node.size = sizes[0]
+            if len(sizes) == 2:
+                node.siblings[0].size = sizes[1]
+        del self.root.restorables[node.payload]
+
+    def _save_restore_state(self):
+        parent = self.parent
+        sizes = (self._size,)
+        flip = False
+        if len(self.siblings) == 1:
+            sizes += (self.siblings[0]._size,)  # pylint: disable=W0212
+            if not self.parent.is_root:
+                flip = True
+                parent = self.siblings[0]
+        self.root.restorables[self.payload] = (parent, self.index, sizes, flip)
 
     def move(self, direction):
         if self.is_root:

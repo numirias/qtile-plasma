@@ -1,7 +1,8 @@
+import pytest
 from pytest import approx
 
 from plasma.debug import draw, tree, info
-from plasma.node import Node, VERTICAL, HORIZONTAL, AddMode
+from plasma.node import Node, VERTICAL, HORIZONTAL, AddMode, NotRestorableError
 
 from .conftest import Nodes
 
@@ -866,12 +867,10 @@ class TestPlasma:
         a.add_node(c)
         assert root.tree == [a, c, b]
         c.add_node(d, mode=AddMode.HORIZONTAL)
-        info(root)
         assert root.tree == [a, c, d, b]
         root.remove_child(d)
         c.add_node(d, mode=AddMode.VERTICAL)
         c.parent.add_child_after
-        info(root)
         assert root.tree == [a, [c, d], b]
         c.add_node(e, mode=AddMode.VERTICAL)
         assert root.tree == [a, [c, e, d], b]
@@ -882,6 +881,131 @@ class TestPlasma:
         assert c.parent.width == b.width == 40
         a.add_node(g, mode=AddMode.VERTICAL | AddMode.SPLIT)
         assert root.tree == [[a, g], f, [c, e, d], b]
+
+    def test_contains(self, root, grid):
+        x = Node('x')
+        nodes = list(grid)
+        nodes += [n.parent for n in nodes]
+        nodes.append(root)
+        for n in nodes:
+            assert n in root
+        assert x not in root
+
+    def test_restore(self, root, grid):
+        a, b, c, d, e = grid
+        tree = root.tree
+        for node in grid:
+            node.remove()
+            root.restore(node)
+            assert root.tree == tree
+
+    def test_restore_same_payload(self, root, grid):
+        """Restore a node that's not identical with the removed one but carries
+        the same payload.
+        """
+        a, b, c, d, e = grid
+        d.remove()
+        new_d = Node('d')
+        root.restore(new_d)
+        assert root.tree == [a, [b, [c, new_d, e]]]
+
+    def test_restore_unknown(self, root, grid):
+        a, b, c, d, e = grid
+        with pytest.raises(NotRestorableError):
+            root.restore(Node('x'))
+        d.remove()
+        with pytest.raises(NotRestorableError):
+            root.restore(Node('x'))
+        root.restore(d)
+        assert root.tree == [a, [b, [c, d, e]]]
+
+    def test_restore_no_parent(self, root, small_grid):
+        a, b, c, d = small_grid
+        c.remove()
+        d.remove()
+        with pytest.raises(NotRestorableError):
+            root.restore(c)
+        root.restore(d)
+        assert root.tree == [a, [b, d]]
+
+    def test_restore_bad_index(self, root, grid):
+        a, b, c, d, e = grid
+        f, g = Nodes('f g')
+        e.parent.add_child(f)
+        e.parent.add_child(g)
+        g.remove()
+        f.remove()
+        e.remove()
+        root.restore(g)
+        assert root.tree == [a, [b, [c, d, g]]]
+
+    def test_restore_sizes(self, root, grid):
+        a, b, c, d, e = grid
+        c.size = 30
+        c.remove()
+        root.restore(c)
+        assert c.size == 30
+        c.remove()
+        d.size = 30
+        e.size = 30
+        assert d.size == e.size == 30
+        root.restore(c)
+        assert c.size == 30
+        assert d.size == e.size == 15
+
+    def test_restore_sizes_flip(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        c.size = 10
+        c.remove()
+        assert a._size is b._size is None
+        root.restore(c)
+        assert c.size == 10
+        b.size = 10
+        c.remove()
+        root.restore(c)
+        assert b.size == 10
+        b.remove()
+        root.restore(b)
+        assert b.size == 10
+
+    def test_restore_root(self, root):
+        a, b = Nodes('a b')
+        root.add_child(a)
+        root.add_child(b)
+        a.size = 20
+        a.remove()
+        root.restore(a)
+        assert a._size == 20
+        assert b._size is None
+        b.remove()
+        root.restore(b)
+        assert a._size == 20
+        assert b._size is None
+
+    def test_restore_keep_flexible(self, root, tiny_grid):
+        a, b, c = tiny_grid
+        b.remove()
+        root.restore(b)
+        assert a._size is b._size is c._size is None
+        b.size = 10
+        b.remove()
+        root.restore(b)
+        assert b._size == 10
+        assert c._size is None
+        c.remove()
+        root.restore(c)
+        assert b._size == 10
+        assert c._size is None
+        c.size = 10
+        b.reset_size()
+        b.remove()
+        root.restore(b)
+        assert b._size is None
+        assert c._size == 10
+        c.remove()
+        root.restore(c)
+        assert b._size is None
+        assert c._size == 10
 
 class TestDebugging:
 

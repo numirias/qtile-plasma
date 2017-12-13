@@ -3,7 +3,7 @@ import copy
 from xcffib.xproto import StackMode
 from libqtile.layout.base import Layout
 
-from .node import Node, AddMode
+from .node import Node, AddMode, NotRestorableError
 
 
 class Plasma(Layout):
@@ -58,12 +58,12 @@ class Plasma(Layout):
         return clone
 
     def add(self, client):
-        current = self.focused_node
-        new_node = Node(client)
-        if self.focused is None or current is None:
-            self.root.add_child(new_node)
-        else:
-            current.add_node(new_node, self.add_mode)
+        node = self.focused_node or self.root
+        new = Node(client)
+        try:
+            self.root.restore(new)
+        except NotRestorableError:
+            node.add_node(new, self.add_mode)
         self.add_mode = None
 
     def remove(self, client):
