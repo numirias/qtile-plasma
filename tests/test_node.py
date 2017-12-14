@@ -1,13 +1,13 @@
 import pytest
 from pytest import approx
 
-from plasma.debug import draw, tree, info
+from plasma.debug import draw, info # noqa
 from plasma.node import Node, VERTICAL, HORIZONTAL, AddMode, NotRestorableError
 
 from .conftest import Nodes
 
 
-class TestPlasma:
+class TestNode:
 
     def test_single_node(self):
         n = Node(None, 0, 0, 120, 50)
@@ -288,6 +288,147 @@ class TestPlasma:
         assert f.right is b
         f.access()
         assert b.left is f
+
+    def test_root_without_dimensions(self):
+        """A root node with undef. dimensions should be able to add a child."""
+        root = Node()
+        x = Node('x')
+        root.add_child(x)
+
+    def test_root(self, root, grid):
+        for node in grid:
+            assert node.root is root
+
+    def test_all(self, root, grid):
+        assert set(root.all_leafs) == set(grid)
+
+    def test_close_neighbor(self, root):
+        a, b, c, d = Nodes('a b c d')
+        root.add_child(a)
+        root.add_child(b)
+        a.flip_with(c)
+        b.flip_with(d)
+        assert a.close_up is None
+        assert a.close_left is None
+        assert a.close_right is b
+        assert a.close_down is c
+
+        assert b.close_up is None
+        assert b.close_left is a
+        assert b.close_right is None
+        assert b.close_down is d
+
+        assert c.close_up is a
+        assert c.close_left is None
+        assert c.close_right is d
+        assert c.close_down is None
+
+        assert d.close_up is b
+        assert d.close_left is c
+        assert d.close_right is None
+        assert d.close_down is None
+
+    def test_close_neighbor2(self, root, small_grid):
+        a, b, c, d = small_grid
+        assert b.close_left is a
+
+    def test_close_neighbor_nested(self, root, grid):
+        a, b, c, d, e = grid
+        f, g, h, i, j, k, L = Nodes('f g h i j k l')
+        root.add_child(f)
+        d.flip_with(h)
+        a.flip_with(i)
+        e.flip_with(j)
+        e.parent.add_child(k)
+        f.flip_with(L)
+        f.height = 10
+        assert b.close_down is d
+        b.flip_with(g)
+        assert b.close_down is c
+        assert d.close_right is e
+        assert e.close_left is d
+        assert L.close_left is e
+        assert e.close_up is g
+        assert L.close_right is None
+        assert h.close_down is None
+
+    def test_close_neighbor_approx(self, root, small_grid):
+        """Tolerate floating point errors when calculating common borders."""
+        root.height += 30
+        a, b, c, d = small_grid
+        e, f, g = Nodes('e f g')
+        c.flip_with(f)
+        b.parent.add_child(e)
+        c.parent.add_child(g)
+        assert g.close_down is e
+
+    def test_points(self, root, small_grid):
+        a, b, c, d = small_grid
+        assert c.top_left == (60, 25)
+        assert c.top_right == (90, 25)
+        assert c.bottom_left == (60, 50)
+        assert c.bottom_right == (90, 50)
+
+    def test_center(self, root):
+        assert root.x_center == 60
+        assert root.y_center == 25
+        assert root.center == (60, 25)
+
+    def test_recent_leaf(self, root, grid):
+        a, b, c, d, e = grid
+        assert d.parent.recent_leaf is c
+        c.access()
+        d.access()
+        assert d.parent.recent_leaf is d
+        b.access()
+        c.access()
+        assert root.recent_leaf is c
+        a.access()
+        assert root.recent_leaf is a
+
+    def test_recent_close_neighbor(self, root, grid):
+        a, b, c, d, e = grid
+        assert b.close_down is d
+        c.access()
+        assert b.close_down is c
+        assert a.close_right is c
+        b.access()
+        assert a.close_right is b
+
+    def test_add_node(self, root):
+        a, b, c, d, e, f, g = Nodes('a b c d e f g')
+        root.add_node(a)
+        assert root.tree == [a]
+        root.add_node(b)
+        assert root.tree == [a, b]
+        a.add_node(c)
+        assert root.tree == [a, c, b]
+        c.add_node(d, mode=AddMode.HORIZONTAL)
+        assert root.tree == [a, c, d, b]
+        root.remove_child(d)
+        c.add_node(d, mode=AddMode.VERTICAL)
+        c.parent.add_child_after
+        assert root.tree == [a, [c, d], b]
+        c.add_node(e, mode=AddMode.VERTICAL)
+        assert root.tree == [a, [c, e, d], b]
+        assert a.width == 40
+        a.add_node(f, mode=AddMode.HORIZONTAL | AddMode.SPLIT)
+        assert root.tree == [a, f, [c, e, d], b]
+        assert a.width == f.width == 20
+        assert c.parent.width == b.width == 40
+        a.add_node(g, mode=AddMode.VERTICAL | AddMode.SPLIT)
+        assert root.tree == [[a, g], f, [c, e, d], b]
+
+    def test_contains(self, root, grid):
+        x = Node('x')
+        nodes = list(grid)
+        nodes += [n.parent for n in nodes]
+        nodes.append(root)
+        for n in nodes:
+            assert n in root
+        assert x not in root
+
+class TestSizes:
 
     def test_size(self, grid):
         a, b, c, d, e = grid
@@ -752,144 +893,7 @@ class TestPlasma:
         assert a.width == 110
         assert b.width == c.width == 10
 
-    def test_root_without_dimensions(self):
-        """A root node with undef. dimensions should be able to add a child."""
-        root = Node()
-        x = Node('x')
-        root.add_child(x)
-
-    def test_root(self, root, grid):
-        for node in grid:
-            assert node.root is root
-
-    def test_all(self, root, grid):
-        assert set(root.all_leafs) == set(grid)
-
-    def test_close_neighbor(self, root):
-        a, b, c, d = Nodes('a b c d')
-        root.add_child(a)
-        root.add_child(b)
-        a.flip_with(c)
-        b.flip_with(d)
-        assert a.close_up is None
-        assert a.close_left is None
-        assert a.close_right is b
-        assert a.close_down is c
-
-        assert b.close_up is None
-        assert b.close_left is a
-        assert b.close_right is None
-        assert b.close_down is d
-
-        assert c.close_up is a
-        assert c.close_left is None
-        assert c.close_right is d
-        assert c.close_down is None
-
-        assert d.close_up is b
-        assert d.close_left is c
-        assert d.close_right is None
-        assert d.close_down is None
-
-    def test_close_neighbor2(self, root, small_grid):
-        a, b, c, d = small_grid
-        assert b.close_left is a
-
-    def test_close_neighbor_nested(self, root, grid):
-        a, b, c, d, e = grid
-        f, g, h, i, j, k, L = Nodes('f g h i j k l')
-        root.add_child(f)
-        d.flip_with(h)
-        a.flip_with(i)
-        e.flip_with(j)
-        e.parent.add_child(k)
-        f.flip_with(L)
-        f.height = 10
-        assert b.close_down is d
-        b.flip_with(g)
-        assert b.close_down is c
-        assert d.close_right is e
-        assert e.close_left is d
-        assert L.close_left is e
-        assert e.close_up is g
-        assert L.close_right is None
-        assert h.close_down is None
-
-    def test_close_neighbor_approx(self, root, small_grid):
-        """Tolerate floating point errors when calculating common borders."""
-        root.height += 30
-        a, b, c, d = small_grid
-        e, f, g = Nodes('e f g')
-        c.flip_with(f)
-        b.parent.add_child(e)
-        c.parent.add_child(g)
-        assert g.close_down is e
-
-    def test_points(self, root, small_grid):
-        a, b, c, d = small_grid
-        assert c.top_left == (60, 25)
-        assert c.top_right == (90, 25)
-        assert c.bottom_left == (60, 50)
-        assert c.bottom_right == (90, 50)
-
-    def test_center(self, root):
-        assert root.x_center == 60
-        assert root.y_center == 25
-        assert root.center == (60, 25)
-
-    def test_recent_leaf(self, root, grid):
-        a, b, c, d, e = grid
-        assert d.parent.recent_leaf is c
-        c.access()
-        d.access()
-        assert d.parent.recent_leaf is d
-        b.access()
-        c.access()
-        assert root.recent_leaf is c
-        a.access()
-        assert root.recent_leaf is a
-
-    def test_recent_close_neighbor(self, root, grid):
-        a, b, c, d, e = grid
-        assert b.close_down is d
-        c.access()
-        assert b.close_down is c
-        assert a.close_right is c
-        b.access()
-        assert a.close_right is b
-
-    def test_add_node(self, root):
-        a, b, c, d, e, f, g = Nodes('a b c d e f g')
-        root.add_node(a)
-        assert root.tree == [a]
-        root.add_node(b)
-        assert root.tree == [a, b]
-        a.add_node(c)
-        assert root.tree == [a, c, b]
-        c.add_node(d, mode=AddMode.HORIZONTAL)
-        assert root.tree == [a, c, d, b]
-        root.remove_child(d)
-        c.add_node(d, mode=AddMode.VERTICAL)
-        c.parent.add_child_after
-        assert root.tree == [a, [c, d], b]
-        c.add_node(e, mode=AddMode.VERTICAL)
-        assert root.tree == [a, [c, e, d], b]
-        assert a.width == 40
-        a.add_node(f, mode=AddMode.HORIZONTAL | AddMode.SPLIT)
-        assert root.tree == [a, f, [c, e, d], b]
-        assert a.width == f.width == 20
-        assert c.parent.width == b.width == 40
-        a.add_node(g, mode=AddMode.VERTICAL | AddMode.SPLIT)
-        assert root.tree == [[a, g], f, [c, e, d], b]
-
-    def test_contains(self, root, grid):
-        x = Node('x')
-        nodes = list(grid)
-        nodes += [n.parent for n in nodes]
-        nodes.append(root)
-        for n in nodes:
-            assert n in root
-        assert x not in root
+class TestRestore:
 
     def test_restore(self, root, grid):
         a, b, c, d, e = grid
@@ -1006,4 +1010,3 @@ class TestPlasma:
         root.restore(c)
         assert b._size is None
         assert c._size == 10
-
