@@ -5,7 +5,7 @@
 [![Build Status](https://travis-ci.org/numirias/qtile-plasma.svg?branch=master)](https://travis-ci.org/numirias/qtile-plasma)
 [![codecov](https://codecov.io/gh/numirias/qtile-plasma/branch/master/graph/badge.svg)](https://codecov.io/gh/numirias/qtile-plasma)
 
-Plasma is an advanced, flexible layout for [Qtile](https://github.com/qtile/qtile/).
+Plasma is a flexible, tree-based layout for [Qtile](https://github.com/qtile/qtile/).
 
 If you're looking for a well-tested and maintained alternative to Qtile's default layouts, give it a try.
 
@@ -160,16 +160,16 @@ window.</td>
 window.</td>
   </tr>
   <tr>
-    <td><code>size(val)</code></td>
+    <td><code>size(x)</code></td>
     <td>Change size of current window.<br>
 (It's recommended to use <code>width()</code>/<code>height()</code> instead.)</td>
   </tr>
   <tr>
-    <td><code>width(val)</code></td>
+    <td><code>width(x)</code></td>
     <td>Set width of current window.</td>
   </tr>
   <tr>
-    <td><code>height(val)</code></td>
+    <td><code>height(x)</code></td>
     <td>Set height of current window.</td>
   </tr>
   <tr>
@@ -177,16 +177,16 @@ window.</td>
     <td>Reset size of current window to automatic (relative) sizing.</td>
   </tr>
   <tr>
-    <td><code>grow(amt)</code></td>
+    <td><code>grow(x)</code></td>
     <td>Grow size of current window.<br>
 (It's recommended to use <code>grow_width()</code>/<code>grow_height()</code> instead.)</td>
   </tr>
   <tr>
-    <td><code>grow_width(amt)</code></td>
+    <td><code>grow_width(x)</code></td>
     <td>Grow width of current window.</td>
   </tr>
   <tr>
-    <td><code>grow_height(amt)</code></td>
+    <td><code>grow_height(x)</code></td>
     <td>Grow height of current window.</td>
   </tr>
 </table>

@@ -213,22 +213,22 @@ class Plasma(Layout):
         """
         self.add_mode = AddMode.VERTICAL | AddMode.SPLIT
 
-    def cmd_size(self, val):
+    def cmd_size(self, x):
         """Change size of current window.
 
         (It's recommended to use `width()`/`height()` instead.)
         """
-        self.focused_node.size = val
+        self.focused_node.size = x
         self.refocus()
 
-    def cmd_width(self, val):
+    def cmd_width(self, x):
         """Set width of current window."""
-        self.focused_node.width = val
+        self.focused_node.width = x
         self.refocus()
 
-    def cmd_height(self, val):
+    def cmd_height(self, x):
         """Set height of current window."""
-        self.focused_node.height = val
+        self.focused_node.height = x
         self.refocus()
 
     def cmd_reset_size(self):
@@ -236,20 +236,20 @@ class Plasma(Layout):
         self.focused_node.reset_size()
         self.refocus()
 
-    def cmd_grow(self, amt):
+    def cmd_grow(self, x):
         """Grow size of current window.
 
         (It's recommended to use `grow_width()`/`grow_height()` instead.)
         """
-        self.focused_node.size += amt
+        self.focused_node.size += x
         self.refocus()
 
-    def cmd_grow_width(self, amt):
+    def cmd_grow_width(self, x):
         """Grow width of current window."""
-        self.focused_node.width += amt
+        self.focused_node.width += x
         self.refocus()
 
-    def cmd_grow_height(self, amt):
+    def cmd_grow_height(self, x):
         """Grow height of current window."""
-        self.focused_node.height += amt
+        self.focused_node.height += x
         self.refocus()

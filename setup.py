@@ -4,7 +4,7 @@ setup(
     name='qtile-plasma',
     packages=['plasma'],
     version='1.4.0',
-    description='An advanced, flexible layout for Qtile',
+    description='A flexible, tree-based layout for Qtile',
     author='numirias',
     author_email='numirias@users.noreply.github.com',
     url='https://github.com/numirias/qtile-plasma',
