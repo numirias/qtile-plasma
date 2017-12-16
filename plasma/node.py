@@ -650,3 +650,4 @@ class Node:
             needle = node.find_payload(payload)
             if needle:
                 return needle
+        return None
