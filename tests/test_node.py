@@ -2,7 +2,7 @@ import pytest
 from pytest import approx
 
 from plasma.debug import draw, info # noqa
-from plasma.node import Node, VERTICAL, HORIZONTAL, AddMode, NotRestorableError
+from plasma.node import Node, HORIZONTAL, AddMode, NotRestorableError
 
 from .conftest import Nodes
 
@@ -68,8 +68,8 @@ class TestNode:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        a.grow(10)
-        b.grow(10)
+        a.size += 10
+        b.size += 10
         b.parent.add_child_after(c, b)
         assert a.size == b.size == c.size == 40
 
@@ -450,7 +450,7 @@ class TestSizes:
 
     def test_resize(self, root, grid):
         a, b, c, d, e = grid
-        a.grow(10)
+        a.size += 10
         assert a.width == a.size == 70
         assert b.height == b.size == 25
         assert b.width == 50
@@ -460,10 +460,10 @@ class TestSizes:
         assert c.pos == (70, 25)
         assert d.pos == (70 + 50/3, 25)
         assert e.pos == (70 + (50/3)*2, 25)
-        b.grow(-5)
+        b.size -= 5
         assert c.width == d.width == e.width == 50/3
         assert c.height == d.height == e.height == 30
-        d.grow(5)
+        d.size += 5
         assert d.width == 50/3 + 5
         d.move_up()
         assert d.size == (50 - b.size) / 2
@@ -511,11 +511,11 @@ class TestSizes:
         root.add_child(a)
         root.add_child(b)
         root.add_child(c)
-        a.grow(10)
+        a.size += 10
         assert a.size == 50
         assert b.size == 35
         assert c.size == 35
-        b.grow(10)
+        b.size += 10
         assert a.size == 50
         assert b.size == 45
         assert c.size == 25
@@ -540,7 +540,7 @@ class TestSizes:
 
     def test_resize_minimum(self, grid):
         a, b, c, d, e = grid
-        b.grow(-100)
+        b.size -= 100
         assert b.size == 10
 
     def test_resize_all_absolute_underflow(self, root, grid):
@@ -607,7 +607,7 @@ class TestSizes:
 
     def test_reset_size(self, grid):
         a, b, c, d, e = grid
-        a.grow(5)
+        a.size += 5
         assert a.size == 65
         a.reset_size()
         assert a.size == 60
@@ -616,7 +616,7 @@ class TestSizes:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        b.grow(-20)
+        b.size -= 20
         b.flip_with(c)
         assert b.parent.size == 40
         assert b.size == c.size == 25
@@ -642,7 +642,7 @@ class TestSizes:
         root.add_child(a)
         root.add_child(b)
         b.flip_with(c)
-        b.grow(10, HORIZONTAL)
+        b.width += 10
         assert b.parent.size == 70
         assert b.size == c.size == 25
 
@@ -673,9 +673,9 @@ class TestSizes:
         a, b, c = Nodes('a b c')
         root.add_child(a)
         root.add_child(b)
-        a.grow(10, orient=VERTICAL)
-        root.grow(10, orient=VERTICAL)
-        root.grow(10, orient=HORIZONTAL)
+        a.height += 10
+        root.height += 10
+        root.width += 10
         root.size = 10
         assert a._size is b._size is root._size is None
 

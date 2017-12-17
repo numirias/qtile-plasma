@@ -390,15 +390,6 @@ class Node:
     def reset_size(self):
         self._size = None
 
-    def grow(self, amt, orient=None):
-        # TODO Deprecate grow, it should be replaced by size assignment
-        if self.is_root:
-            return
-        if orient is ~self.parent.orient:
-            self.parent.grow(amt)
-            return
-        self.size += amt
-
     @property
     def flexible(self):
         """A node is flexible if its size isn't (explicitly or implictly)
