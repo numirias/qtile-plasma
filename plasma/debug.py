@@ -53,7 +53,7 @@ def tree(node, level=0):
         size='size: %s%s' % (node.size, ' (auto)' if node.flexible else ''),
         parent='p: %s' % node.parent,
     )
-    for child in node.children:
+    for child in node:
         res += tree(child, level+1)
     return res
 
@@ -65,7 +65,7 @@ def draw(root):
                 *node.pixel_perfect,
                 node.payload
             )
-        for child in node.children:
+        for child in node:
             add(child)
     add(root)
     return canvas.view()

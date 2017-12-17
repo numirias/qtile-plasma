@@ -58,7 +58,7 @@ class Plasma(Layout):
         return clone
 
     def add(self, client):
-        node = self.focused_node or self.root
+        node = self.root if self.focused_node is None else self.focused_node
         new = Node(client)
         try:
             self.root.restore(new)

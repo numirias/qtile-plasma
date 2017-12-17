@@ -70,17 +70,29 @@ class Node:
 
     def __repr__(self):
         info = self.payload or ''
-        if self.children:
-            info += ' +%d' % len(self.children)
+        if self:
+            info += ' +%d' % len(self)
         return '<Node %s %x>' % (info, id(self))
 
     def __contains__(self, node):
         if node is self:
             return True
-        for child in self.children:
+        for child in self:
             if node in child:
                 return True
         return False
+
+    def __iter__(self):
+        yield from self.children
+
+    def __getitem__(self, key):
+        return self.children[key]
+
+    def __setitem__(self, key, value):
+        self.children[key] = value
+
+    def __len__(self):
+        return len(self.children)
 
     @property
     def root(self):
@@ -95,7 +107,7 @@ class Node:
 
     @property
     def is_leaf(self):
-        return not self.children
+        return not self
 
     @property
     def index(self):
@@ -103,29 +115,29 @@ class Node:
 
     @property
     def tree(self):
-        return [c.tree if c.children else c for c in self.children]
+        return [c.tree if c else c for c in self]
 
     @property
     def siblings(self):
-        return [c for c in self.parent.children if c is not self]
+        return [c for c in self.parent if c is not self]
 
     @property
     def first_leaf(self):
         if self.is_leaf:
             return self
-        return self.children[0].first_leaf
+        return self[0].first_leaf
 
     @property
     def last_leaf(self):
         if self.is_leaf:
             return self
-        return self.children[-1].last_leaf
+        return self[-1].last_leaf
 
     @property
     def recent_leaf(self):
         if self.is_leaf:
             return self
-        return max(self.children, key=lambda n: n.last_accessed).recent_leaf
+        return max(self, key=lambda n: n.last_accessed).recent_leaf
 
     @property
     def prev_leaf(self):
@@ -134,22 +146,22 @@ class Node:
         idx = self.index - 1
         if idx < 0:
             return self.parent.prev_leaf
-        return self.parent.children[idx].last_leaf
+        return self.parent[idx].last_leaf
 
     @property
     def next_leaf(self):
         if self.is_root:
             return self.first_leaf
         idx = self.index + 1
-        if idx >= len(self.parent.children):
+        if idx >= len(self.parent):
             return self.parent.next_leaf
-        return self.parent.children[idx].first_leaf
+        return self.parent[idx].first_leaf
 
     @property
     def all_leafs(self):
         if self.is_leaf:
             yield self
-        for child in self.children:
+        for child in self:
             yield from child.all_leafs
 
     @property
@@ -295,10 +307,9 @@ class Node:
         if self.flexible:
             # Distribute space evenly among flexible nodes
             taken = sum(n.size for n in self.siblings if not n.flexible)
-            flexibles = [n for n in self.parent.children if n.flexible]
+            flexibles = [n for n in self.parent if n.flexible]
             return (self.parent.capacity - taken) / len(flexibles)
-        return max(sum(gc.min_size for gc in c.children)
-                   for c in self.children)
+        return max(sum(gc.min_size for gc in c) for c in self)
 
     @size.setter
     def size(self, val):
@@ -317,13 +328,13 @@ class Node:
         Node.fit_into(self.siblings, self.parent.capacity - val)
         if val == 0:
             return
-        if self.children:
+        if self:
             Node.fit_into([self], val)
         self._size = val
 
     @property
     def size_offset(self):
-        return sum(c.size for c in self.parent.children[:self.index])
+        return sum(c.size for c in self.parent[:self.index])
 
     @staticmethod
     def fit_into(nodes, space):
@@ -335,7 +346,7 @@ class Node:
             # If any flexible node exists, it will occupy the space
             # automatically, not requiring any action.
             return
-        nodes_left = nodes.copy()
+        nodes_left = nodes[:]
         space_left = space
         if space < occupied:
             for node in nodes:
@@ -352,8 +363,8 @@ class Node:
             new_size = node.size * factor
             if node.fixed:
                 node._size = new_size  # pylint: disable=protected-access
-            for child in node.children:
-                Node.fit_into(child.children, new_size)
+            for child in node:
+                Node.fit_into(child, new_size)
 
     @property
     def fixed(self):
@@ -366,16 +377,15 @@ class Node:
             return self._size
         if self.is_leaf:
             return self.min_size_default
-        size = max(sum(gc.min_size for gc in c.children)
-                   for c in self.children)
+        size = max(sum(gc.min_size for gc in c) for c in self)
         return max(size, self.min_size_default)
 
     @property
     def min_size_bound(self):
         if self.is_leaf:
             return self.min_size_default
-        return max(sum(gc.min_size_bound for gc in c.children) or
-                   self.min_size_default for c in self.children)
+        return max(sum(gc.min_size_bound for gc in c) or
+                   self.min_size_default for c in self)
 
     def reset_size(self):
         self._size = None
@@ -396,8 +406,7 @@ class Node:
         """
         if self.fixed:
             return False
-        return all((any(gc.flexible for gc in c.children) or c.is_leaf)
-                   for c in self.children)
+        return all((any(gc.flexible for gc in c) or c.is_leaf) for c in self)
 
     def access(self):
         self.last_accessed = datetime.now()
@@ -412,8 +421,8 @@ class Node:
             return None
         if direction.orient is self.parent.orient:
             target_idx = self.index + direction.offset
-            if 0 <= target_idx < len(self.parent.children):
-                return self.parent.children[target_idx].recent_leaf
+            if 0 <= target_idx < len(self.parent):
+                return self.parent[target_idx].recent_leaf
             if self.parent.is_root:
                 return None
             return self.parent.parent.neighbor(direction)
@@ -481,34 +490,34 @@ class Node:
     def add_child(self, node, idx=None):
         # TODO Currently we assume that the node has no size.
         if idx is None:
-            idx = len(self.children)
+            idx = len(self)
         self.children.insert(idx, node)
         node.parent = self
-        if len(self.children) == 1:
+        if len(self) == 1:
             return
         total = self.capacity
-        Node.fit_into(node.siblings, total - (total / len(self.children)))
+        Node.fit_into(node.siblings, total - (total / len(self)))
 
     def add_child_after(self, new, old):
-        self.add_child(new, idx=self.children.index(old)+1)
+        self.add_child(new, idx=old.index+1)
 
     def remove_child(self, node):
         node._save_restore_state()  # pylint: disable=W0212
         node.force_size(0)
         self.children.remove(node)
-        if len(self.children) == 1:
+        if len(self) == 1:
             if self.is_root:
                 # A single child doesn't need a fixed size
-                self.children[0].reset_size()
+                self[0].reset_size()
             else:
                 # Collapse tree with a single child
-                self.parent.replace_child(self, self.children[0])
+                self.parent.replace_child(self, self[0])
 
     def remove(self):
         self.parent.remove_child(self)
 
     def replace_child(self, old, new):
-        self.children[self.children.index(old)] = new
+        self[old.index] = new
         new.parent = self
         new._size = old._size  # pylint: disable=protected-access
 
@@ -581,16 +590,16 @@ class Node:
         if direction.orient is self.parent.orient:
             old_idx = self.index
             new_idx = old_idx + direction.offset
-            if 0 <= new_idx < len(self.parent.children):
-                ch = self.parent.children
-                ch[old_idx], ch[new_idx] = ch[new_idx], ch[old_idx]
+            if 0 <= new_idx < len(self.parent):
+                p = self.parent
+                p[old_idx], p[new_idx] = p[new_idx], p[old_idx]
                 return
             new_sibling = self.parent.parent
         else:
             new_sibling = self.parent
         try:
             new_parent = new_sibling.parent
-            idx = new_parent.children.index(new_sibling)
+            idx = new_sibling.index
         except AttributeError:
             return
         self.reset_size()
@@ -620,11 +629,11 @@ class Node:
             self._move_and_integrate(direction)
             return
         target_idx = self.index + direction.offset
-        if target_idx < 0 or target_idx >= len(self.parent.children):
+        if target_idx < 0 or target_idx >= len(self.parent):
             self._move_and_integrate(direction)
             return
         self.reset_size()
-        target = self.parent.children[target_idx]
+        target = self.parent[target_idx]
         self.parent.remove_child(self)
         if target.is_leaf:
             target.flip_with(self)
@@ -646,8 +655,8 @@ class Node:
     def find_payload(self, payload):
         if self.payload is payload:
             return self
-        for node in self.children:
-            needle = node.find_payload(payload)
-            if needle:
+        for child in self:
+            needle = child.find_payload(payload)
+            if needle is not None:
                 return needle
         return None
