@@ -479,7 +479,6 @@ class Node:
         return self.close_neighbor(RIGHT)
 
     def add_child(self, node, idx=None):
-        # TODO Currently we assume that the node has no size.
         if idx is None:
             idx = len(self)
         self.children.insert(idx, node)
@@ -497,12 +496,14 @@ class Node:
         node.force_size(0)
         self.children.remove(node)
         if len(self) == 1:
+            child = self[0]
             if self.is_root:
                 # A single child doesn't need a fixed size
-                self[0].reset_size()
+                child.reset_size()
             else:
                 # Collapse tree with a single child
-                self.parent.replace_child(self, self[0])
+                self.parent.replace_child(self, child)
+                Node.fit_into(child, self.capacity)
 
     def remove(self):
         self.parent.remove_child(self)
@@ -555,8 +556,10 @@ class Node:
             raise NotRestorableError()
         node.reset_size()
         if flip:
+            old_parent_size = parent.size
             parent.flip_with(node, reverse=(idx == 0))
             node.size, parent.size = sizes
+            Node.fit_into(parent, old_parent_size)
         else:
             parent.add_child(node, idx=idx)
             node.size = sizes[0]

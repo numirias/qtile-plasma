@@ -893,6 +893,21 @@ class TestSizes:
         assert a.width == 110
         assert b.width == c.width == 10
 
+    def test_resize_with_collapse_and_restore(self, root, small_grid):
+        a, b, c, d = small_grid
+        root.height = 30
+        c.size = 30
+        d.size += 10
+        b.remove()
+        assert c.size == c.height == 10
+        assert d.size == d.height == 20
+        root.restore(b)
+        assert b.height == 15
+        assert b.width == 60
+        assert c.height == d.height == 15
+        assert c.width == 20
+        assert d.width == 40
+
 class TestRestore:
 
     def test_restore(self, root, grid):
