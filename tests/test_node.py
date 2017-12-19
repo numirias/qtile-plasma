@@ -893,21 +893,6 @@ class TestSizes:
         assert a.width == 110
         assert b.width == c.width == 10
 
-    def test_resize_with_collapse_and_restore(self, root, small_grid):
-        a, b, c, d = small_grid
-        root.height = 30
-        c.size = 30
-        d.size += 10
-        b.remove()
-        assert c.size == c.height == 10
-        assert d.size == d.height == 20
-        root.restore(b)
-        assert b.height == 15
-        assert b.width == 60
-        assert c.height == d.height == 15
-        assert c.width == 20
-        assert d.width == 40
-
 class TestRestore:
 
     def test_restore(self, root, grid):
@@ -1001,6 +986,22 @@ class TestRestore:
         assert a._size == 20
         assert b._size is None
 
+    def test_restore_root2(self, root):
+        a, b, c = Nodes('a b c')
+        root.add_child(a)
+        root.add_child(b)
+        root.add_child(c)
+        b.size = 20
+        c.size = 40
+        a.remove()
+        assert b.size == 40
+        assert c.size == 80
+        root.restore(a)
+        assert not a.fixed
+        assert a.size == 60
+        assert b.size == 20
+        assert c.size == 40
+
     def test_restore_keep_flexible(self, root, tiny_grid):
         a, b, c = tiny_grid
         b.remove()
@@ -1025,3 +1026,18 @@ class TestRestore:
         root.restore(c)
         assert b._size is None
         assert c._size == 10
+
+    def test_resize_with_collapse_and_restore(self, root, small_grid):
+        a, b, c, d = small_grid
+        root.height = 30
+        c.size = 30
+        d.size += 10
+        b.remove()
+        assert c.size == c.height == 10
+        assert d.size == d.height == 20
+        root.restore(b)
+        assert b.height == 15
+        assert b.width == 60
+        assert c.height == d.height == 15
+        assert c.width == 20
+        assert d.width == 40

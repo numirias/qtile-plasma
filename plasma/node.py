@@ -547,12 +547,13 @@ class Node:
         Try to add the node in a place where a node with the same payload
         has previously been.
         """
+        restorables = self.root.restorables
         try:
-            parent, idx, sizes, flip = self.root.restorables[node.payload]
+            parent, idx, sizes, fixed, flip = restorables[node.payload]
         except KeyError:
             raise NotRestorableError()
         if parent not in self.root:
-            # Don't restore at a parent that's not part of the tree anymore
+            # Don't try to restore if parent is not part of the tree anymore
             raise NotRestorableError()
         node.reset_size()
         if flip:
@@ -565,18 +566,23 @@ class Node:
             node.size = sizes[0]
             if len(sizes) == 2:
                 node.siblings[0].size = sizes[1]
-        del self.root.restorables[node.payload]
+        if not fixed:
+            node.reset_size()
+        del restorables[node.payload]
 
     def _save_restore_state(self):
         parent = self.parent
-        sizes = (self._size,)
+        sizes = (self.size,)
         flip = False
         if len(self.siblings) == 1:
+            # If there is only one node left in the container, we need to save
+            # its size too because the size will be lost.
             sizes += (self.siblings[0]._size,)  # pylint: disable=W0212
             if not self.parent.is_root:
                 flip = True
                 parent = self.siblings[0]
-        self.root.restorables[self.payload] = (parent, self.index, sizes, flip)
+        self.root.restorables[self.payload] = (parent, self.index, sizes,
+                                               self.fixed, flip)
 
     def move(self, direction):
         if self.is_root:
