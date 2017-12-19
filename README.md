@@ -11,13 +11,13 @@ If you're looking for a well-tested and maintained alternative to Qtile's defaul
 
 ## About
 
-Plasma works on a tree structure. Each node represents a container with child containers aligned either horizontally or vertically (similar to [i3](https://i3wm.org/)). Each window is attached to a leaf, taking either a calculated amount or a custom amount of space in its parent container. Windows can be resized, rearranged and integrated into other containers, enabling lots of different setups.
+Plasma works on a tree structure. Each node represents a container with child containers aligned either horizontally or vertically (similar to [i3](https://i3wm.org/)). Each window is attached to a leaf, taking either a specific custom amount or a calculated amount of space in its parent container. Windows can be resized, rearranged and integrated into other containers, enabling lots of different setups.
 
 ## Demo
 
 Here is a quick demo showing some of the main features (adding modes, moving, integrating and resizing):
 
-![Demo](https://i.imgur.com/y1cTsK8.gif)
+![Demo](https://i.imgur.com/N3CMonP.gif)
 
 ## Installation
 
