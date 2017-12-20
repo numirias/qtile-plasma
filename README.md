@@ -198,6 +198,34 @@ window.</td>
 </table>
 <!--commands-end-->
 
----
+## Contributing
 
 If you have found a bug or want to suggest a feature, please [file an issue](https://github.com/numirias/qtile-plasma/issues/new).
+
+
+To work on Plasma locally, you need to clone submodules too, since the layout integration tests use some of Qtile's test fixtures:
+
+```
+git clone --recursive https://github.com/numirias/qtile-plasma/
+```
+
+Also make sure you meet the [hacking requirements of Qtile](http://docs.qtile.org/en/latest/manual/hacking.html). In particular, have `xserver-xephyr` installed. Then run:
+
+```
+make init
+```
+
+If that fails, run the `init` instructions from the [Makefile](https://github.com/numirias/qtile-plasma/blob/master/Makefile) one by one.
+
+All new changes need to be fully test-covered and pass the linting:
+
+```
+make lint
+make test
+```
+
+If you made changes to the layout API, also re-build this README's [commands](#commands) section:
+
+```
+make readme
+```
