@@ -73,6 +73,8 @@ keymap = {
     'M-x': lazy.layout.grow_width(-30),
     'M-S-a': lazy.layout.grow_height(30),
     'M-S-x': lazy.layout.grow_height(-30),
+    'M-C-5': lazy.layout.size(500),
+    'M-C-8': lazy.layout.size(800),
     'M-n': lazy.layout.reset_size(),
 }
 keys = [EzKey(k, v) for k, v in keymap.items()]
