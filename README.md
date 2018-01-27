@@ -26,6 +26,12 @@ Install the package, e.g. via pip:
 ```
 pip install --upgrade qtile-plasma
 ```
+
+or if you're running arch linux you can find qtile-plasma on Arch User Repository:
+
+```
+pacaur -S qtile-plasma
+```
     
 Add the layout to your config (`~/.config/qtile/config.py`):
 
