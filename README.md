@@ -1,9 +1,9 @@
 # Plasma
 
-[![PyPI Version](https://img.shields.io/pypi/v/qtile-plasma.svg)](https://pypi.python.org/pypi/qtile-plasma)
-[![Python Versions](https://img.shields.io/pypi/pyversions/qtile-plasma.svg)](https://pypi.python.org/pypi/qtile-plasma)
 [![Build Status](https://travis-ci.org/numirias/qtile-plasma.svg?branch=master)](https://travis-ci.org/numirias/qtile-plasma)
 [![codecov](https://codecov.io/gh/numirias/qtile-plasma/branch/master/graph/badge.svg)](https://codecov.io/gh/numirias/qtile-plasma)
+[![PyPI Version](https://img.shields.io/pypi/v/qtile-plasma.svg)](https://pypi.python.org/pypi/qtile-plasma)
+[![Python Versions](https://img.shields.io/pypi/pyversions/qtile-plasma.svg)](https://pypi.python.org/pypi/qtile-plasma)
 
 Plasma is a flexible, tree-based layout for [Qtile](https://github.com/qtile/qtile/).
 
@@ -11,7 +11,7 @@ If you're looking for a well-tested and maintained alternative to Qtile's defaul
 
 ## About
 
-Plasma works on a tree structure. Each node represents a container with child containers aligned either horizontally or vertically (similar to [i3](https://i3wm.org/)). Each window is attached to a leaf, taking either a specific custom amount or a calculated amount of space in its parent container. Windows can be resized, rearranged and integrated into other containers, enabling lots of different setups.
+Plasma works on a tree structure. Each node represents a container with child containers aligned either horizontally or vertically (similar to [i3](https://i3wm.org/)). Each window is attached to a leaf, taking either a proportional or a specific custom amount of space in its parent container. Windows can be resized, rearranged and integrated into other containers, enabling lots of different setups.
 
 ## Demo
 
@@ -21,19 +21,19 @@ Here is a quick demo showing some of the main features (adding modes, moving, in
 
 ## Installation
 
-Install the package, e.g. via pip:
+Install the package. You can [get it from PyPI](https://pypi.python.org/pypi/qtile-plasma/):
 
 ```
 pip install --upgrade qtile-plasma
 ```
 
-or if you're running arch linux you can find qtile-plasma on Arch User Repository:
+Or, if you're running Arch Linux, you can also [get it from AUR](https://aur.archlinux.org/packages/qtile-plasma/):
 
 ```
 pacaur -S qtile-plasma
 ```
     
-Add the layout to your config (`~/.config/qtile/config.py`):
+Then, add the layout to your config (`~/.config/qtile/config.py`):
 
 ```python
 from plasma import Plasma
