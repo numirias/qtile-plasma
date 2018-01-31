@@ -1,7 +1,13 @@
 from collections import namedtuple
 from datetime import datetime
-from enum import Enum, Flag, auto
 from math import isclose
+import sys
+
+if sys.version_info >= (3, 6):
+    from enum import Enum, Flag, auto
+else:
+    # Python 3.5 backport
+    from .enum import Enum, Flag, auto
 
 
 Point = namedtuple('Point', 'x y')
