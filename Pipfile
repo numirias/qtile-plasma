@@ -11,6 +11,7 @@ xcffib = ">=0.5.0"
 cffi = "*"
 cairocffi = "*"
 qtile = "*"
+"flake8" = "*"
 
 
 [dev-packages]
