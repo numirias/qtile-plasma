@@ -27,11 +27,14 @@ class Plasma(Layout):
         ('border_width_single', 0, 'Border width for single window'),
         ('margin', 0, 'Layout margin'),
     ]
+    # If windows are added before configure() was called, the screen size is
+    # still unknown, so we need to set some arbitrary initial root dimensions
+    default_dimensions = (0, 0, 1000, 1000)
 
     def __init__(self, **config):
         Layout.__init__(self, **config)
         self.add_defaults(Plasma.defaults)
-        self.root = Node()
+        self.root = Node(None, *self.default_dimensions)
         self.focused = None
         self.add_mode = None
 
@@ -52,7 +55,7 @@ class Plasma(Layout):
     def clone(self, group):
         clone = copy.copy(self)
         clone.group = group
-        clone.root = Node()
+        clone.root = Node(None, *self.default_dimensions)
         clone.focused = None
         clone.add_mode = None
         return clone

@@ -9,7 +9,7 @@ from plasma.node import Node
 # We borrow Qtile's testing framework. That's not elegant but the best option.
 sys.path.insert(0, str(Path(__file__).parents[1] / 'lib'))  # noqa: E402
 from qtile.libqtile import config
-from qtile.libqtile.layout.floating import Floating
+from qtile.libqtile.layout import Floating
 from qtile.test.conftest import no_xinerama, qtile, xephyr, xvfb  # noqa: F401
 from qtile.test.layouts.layout_utils import assertFocused
 
@@ -217,3 +217,11 @@ class TestLayout:
         assertFocused(qtile, 'a')
         qtile.c.layout.recent()
         assertFocused(qtile, 'c')
+
+    def test_bug_10(self):
+        """Adding nodes when the correct root dimensions are still unknown
+        should not raise an error.
+        """
+        layout = Plasma()
+        layout.add(object())
+        layout.add(object())
