@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='qtile-plasma',
     packages=['plasma'],
-    version='1.5.1',
+    version='1.5.2',
     description='A flexible, tree-based layout for Qtile',
     author='numirias',
     author_email='numirias@users.noreply.github.com',
