@@ -1,7 +1,7 @@
-from datetime import datetime
 from pathlib import Path
 from pytest import fixture, mark
 import sys
+import time
 
 from plasma import Plasma
 from plasma.node import Node
@@ -74,7 +74,7 @@ class TestLayout:
         layout = Plasma()
         layout.root = root
         layout.add('a')
-        now = datetime.now()
+        now = time.time()
         assert layout.root.find_payload('a').last_accessed < now
         layout.focus('a')
         assert layout.root.find_payload('a').last_accessed > now

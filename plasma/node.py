@@ -1,5 +1,5 @@
 from collections import namedtuple
-from datetime import datetime
+import time
 from math import isclose
 import sys
 
@@ -70,7 +70,7 @@ class Node:
         self._height = height
         self._size = None
         self.children = []
-        self.last_accessed = datetime.min
+        self.last_accessed = 0
         self.parent = None
         self.restorables = {}
 
@@ -406,7 +406,7 @@ class Node:
         return all((any(gc.flexible for gc in c) or c.is_leaf) for c in self)
 
     def access(self):
-        self.last_accessed = datetime.now()
+        self.last_accessed = time.time()
         try:
             self.parent.access()
         except AttributeError:
@@ -460,7 +460,7 @@ class Node:
         if not nodes:
             return None
         most_recent = max(nodes, key=lambda n: n.last_accessed)
-        if most_recent.last_accessed > datetime.min:
+        if most_recent.last_accessed > 0:
             return most_recent
         if direction in [UP, DOWN]:
             match = lambda n: n.x <= self.x_center <= n.x_end
