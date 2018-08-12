@@ -3,7 +3,7 @@ from setuptools import setup
 setup(
     name='qtile-plasma',
     packages=['plasma'],
-    version='1.5.2',
+    version='1.5.3',
     description='A flexible, tree-based layout for Qtile',
     author='numirias',
     author_email='numirias@users.noreply.github.com',
@@ -19,6 +19,7 @@ setup(
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
+        'Programming Language :: Python :: 3.7',
         'Topic :: Desktop Environment :: Window Managers',
     ],
 )
