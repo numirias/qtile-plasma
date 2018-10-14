@@ -27,12 +27,6 @@ Install the package. You can [get it from PyPI](https://pypi.python.org/pypi/qti
 pip install --upgrade qtile-plasma
 ```
 
-Or, if you're running Arch Linux, you can also [get it from AUR](https://aur.archlinux.org/packages/qtile-plasma/):
-
-```
-pacaur -S qtile-plasma
-```
-    
 Then, add the layout to your config (`~/.config/qtile/config.py`):
 
 ```python
