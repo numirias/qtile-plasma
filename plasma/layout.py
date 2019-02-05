@@ -20,7 +20,7 @@ class Plasma(Layout):
         ('border_normal', '#333333', 'Unfocused window border color'),
         ('border_focus', '#00e891', 'Focused window border color'),
         ('border_normal_fixed', '#333333',
-         'Unfocused fixed-size window''border color'),
+         'Unfocused fixed-size window border color'),
         ('border_focus_fixed', '#00e8dc',
          'Focused fixed-size window border color'),
         ('border_width', 1, 'Border width'),

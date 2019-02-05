@@ -179,22 +179,22 @@ class TestNode:
         a, b, c, d, e = grid
         res = c.move_down()
         assert b.parent.tree == [b, [d, e], c]
-        assert res == True
+        assert res is True
         res = e.move_down()
         assert b.parent.tree == [b, d, e, c]
-        assert res == True
+        assert res is True
         res = e.move_left()
         assert root.tree == [a, e, [b, d, c]]
-        assert res == True
+        assert res is True
         res = d.move_right()
         assert root.tree == [a, e, [b, c], d]
-        assert res == True
+        assert res is True
         res = a.move_left()
         assert root.tree == [a, e, [b, c], d]
-        assert res == False
+        assert res is False
         res = d.move_right()
         assert root.tree == [a, e, [b, c], d]
-        assert res == False
+        assert res is False
 
     def test_move_blocked(self, root, grid):
         a, b, c, d, e = grid
