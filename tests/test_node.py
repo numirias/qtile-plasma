@@ -177,27 +177,34 @@ class TestNode:
 
     def test_advanced_move2(self, root, grid):
         a, b, c, d, e = grid
-        c.move_down()
+        res = c.move_down()
         assert b.parent.tree == [b, [d, e], c]
-        e.move_down()
+        assert res == True
+        res = e.move_down()
         assert b.parent.tree == [b, d, e, c]
-        e.move_left()
+        assert res == True
+        res = e.move_left()
         assert root.tree == [a, e, [b, d, c]]
-        d.move_right()
+        assert res == True
+        res = d.move_right()
         assert root.tree == [a, e, [b, c], d]
-        a.move_left()
+        assert res == True
+        res = a.move_left()
         assert root.tree == [a, e, [b, c], d]
-        d.move_right()
+        assert res == False
+        res = d.move_right()
         assert root.tree == [a, e, [b, c], d]
+        assert res == False
 
     def test_move_blocked(self, root, grid):
         a, b, c, d, e = grid
         orig_tree = root.tree.copy()
-        a.move_up()
+        res = a.move_up()
         assert root.tree == orig_tree
-        b.move_up()
+        assert res is False
+        res = b.move_up()
         assert root.tree == orig_tree
-        b.move_right()
+        assert res is False
 
     def test_move_root(self, root):
         a = Node('a')

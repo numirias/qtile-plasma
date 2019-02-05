@@ -591,15 +591,16 @@ class Node:
                                                self.fixed, flip)
 
     def move(self, direction):
+        """Move this node in `direction`. Return whether node was moved."""
         if self.is_root:
-            return
+            return False
         if direction.orient is self.parent.orient:
             old_idx = self.index
             new_idx = old_idx + direction.offset
             if 0 <= new_idx < len(self.parent):
                 p = self.parent
                 p[old_idx], p[new_idx] = p[new_idx], p[old_idx]
-                return
+                return True
             new_sibling = self.parent.parent
         else:
             new_sibling = self.parent
@@ -607,22 +608,23 @@ class Node:
             new_parent = new_sibling.parent
             idx = new_sibling.index
         except AttributeError:
-            return
+            return False
         self.reset_size()
         self.parent.remove_child(self)
         new_parent.add_child(self, idx + (1 if direction.offset == 1 else 0))
+        return True
 
     def move_up(self):
-        self.move(UP)
+        return self.move(UP)
 
     def move_down(self):
-        self.move(DOWN)
+        return self.move(DOWN)
 
     def move_right(self):
-        self.move(RIGHT)
+        return self.move(RIGHT)
 
     def move_left(self):
-        self.move(LEFT)
+        return self.move(LEFT)
 
     def _move_and_integrate(self, direction):
         old_parent = self.parent
