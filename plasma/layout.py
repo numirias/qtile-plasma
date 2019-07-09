@@ -90,7 +90,7 @@ class Plasma(Layout):
             width-2*border_width,
             height-2*border_width,
             border_width,
-            self.group.qtile.colorPixel(border_color),
+            self.group.qtile.color_pixel(border_color),
             margin=self.margin,
         )
         # Always keep tiles below floating windows

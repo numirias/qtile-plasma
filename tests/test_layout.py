@@ -11,19 +11,19 @@ sys.path.insert(0, str(Path(__file__).parents[1] / 'lib'))  # noqa: E402
 from qtile.libqtile import config
 from qtile.libqtile.layout import Floating
 from qtile.test.conftest import no_xinerama, qtile, xephyr, xvfb  # noqa: F401
-from qtile.test.layouts.layout_utils import assertFocused
+from qtile.test.layouts.layout_utils import assert_focused
 
 
 @fixture
 def grid(qtile):
-    qtile.testWindow('a')
-    qtile.testWindow('b')
+    qtile.test_window('a')
+    qtile.test_window('b')
     qtile.c.layout.previous()
     qtile.c.layout.mode_vertical()
-    qtile.testWindow('c')
+    qtile.test_window('c')
     qtile.c.layout.right()
     qtile.c.layout.mode_vertical()
-    qtile.testWindow('d')
+    qtile.test_window('d')
 
 class Config:
 
@@ -81,44 +81,44 @@ class TestLayout:
 
     @plasma_config
     def test_info(self, qtile):
-        qtile.testWindow('a')
-        qtile.testWindow('b')
+        qtile.test_window('a')
+        qtile.test_window('b')
         assert qtile.c.layout.info()['tree'] == ['a', 'b']
 
     @plasma_config
     def test_windows(self, qtile):
-        qtile.testWindow('a')
-        qtile.testWindow('b')
-        qtile.testWindow('c')
-        assertFocused(qtile, 'c')
+        qtile.test_window('a')
+        qtile.test_window('b')
+        qtile.test_window('c')
+        assert_focused(qtile, 'c')
         assert tree(qtile) == ['a', 'b', 'c']
 
     @plasma_config
     def test_split_directions(self, qtile):
-        qtile.testWindow('a')
+        qtile.test_window('a')
         qtile.c.layout.mode_horizontal()
-        qtile.testWindow('b')
+        qtile.test_window('b')
         qtile.c.layout.mode_vertical()
-        qtile.testWindow('c')
+        qtile.test_window('c')
         assert tree(qtile) == ['a', ['b', 'c']]
 
     @plasma_config
     def test_directions(self, qtile, grid):
-        assertFocused(qtile, 'd')
+        assert_focused(qtile, 'd')
         qtile.c.layout.left()
-        assertFocused(qtile, 'c')
+        assert_focused(qtile, 'c')
         qtile.c.layout.up()
-        assertFocused(qtile, 'a')
+        assert_focused(qtile, 'a')
         qtile.c.layout.right()
-        assertFocused(qtile, 'b')
+        assert_focused(qtile, 'b')
         qtile.c.layout.down()
-        assertFocused(qtile, 'd')
+        assert_focused(qtile, 'd')
         qtile.c.layout.down()
-        assertFocused(qtile, 'd')
+        assert_focused(qtile, 'd')
         qtile.c.layout.previous()
-        assertFocused(qtile, 'b')
+        assert_focused(qtile, 'b')
         qtile.c.layout.next()
-        assertFocused(qtile, 'd')
+        assert_focused(qtile, 'd')
 
     @plasma_config
     def test_move(self, qtile, grid):
@@ -146,10 +146,10 @@ class TestLayout:
 
     @plasma_config
     def test_sizes(self, qtile):
-        qtile.testWindow('a')
-        qtile.testWindow('b')
+        qtile.test_window('a')
+        qtile.test_window('b')
         qtile.c.layout.mode_vertical()
-        qtile.testWindow('c')
+        qtile.test_window('c')
         info = qtile.c.window.info()
         assert info['x'] == 400
         assert info['y'] == 300
@@ -179,8 +179,8 @@ class TestLayout:
 
     @plasma_config
     def test_remove(self, qtile):
-        a = qtile.testWindow('a')
-        b = qtile.testWindow('b')
+        a = qtile.test_window('a')
+        b = qtile.test_window('b')
         assert tree(qtile) == ['a', 'b']
         qtile.kill_window(a)
         assert tree(qtile) == ['b']
@@ -189,34 +189,34 @@ class TestLayout:
 
     @plasma_config
     def test_split_mode(self, qtile):
-        qtile.testWindow('a')
-        qtile.testWindow('b')
+        qtile.test_window('a')
+        qtile.test_window('b')
         qtile.c.layout.mode_horizontal_split()
-        qtile.testWindow('c')
+        qtile.test_window('c')
         assert qtile.c.window.info()['width'] == 200 - 2
         qtile.c.layout.mode_vertical()
-        qtile.testWindow('d')
+        qtile.test_window('d')
         assert qtile.c.window.info()['height'] == 300 - 2
-        qtile.testWindow('e')
+        qtile.test_window('e')
         assert qtile.c.window.info()['height'] == 200 - 2
         qtile.c.layout.mode_vertical_split()
-        qtile.testWindow('f')
+        qtile.test_window('f')
         assert qtile.c.window.info()['height'] == 100 - 2
 
     @plasma_config
     def test_recent(self, qtile):
-        qtile.testWindow('a')
-        qtile.testWindow('b')
-        qtile.testWindow('c')
-        assertFocused(qtile, 'c')
+        qtile.test_window('a')
+        qtile.test_window('b')
+        qtile.test_window('c')
+        assert_focused(qtile, 'c')
         qtile.c.layout.recent()
-        assertFocused(qtile, 'b')
+        assert_focused(qtile, 'b')
         qtile.c.layout.recent()
-        assertFocused(qtile, 'c')
+        assert_focused(qtile, 'c')
         qtile.c.layout.next()
-        assertFocused(qtile, 'a')
+        assert_focused(qtile, 'a')
         qtile.c.layout.recent()
-        assertFocused(qtile, 'c')
+        assert_focused(qtile, 'c')
 
     def test_bug_10(self):
         """Adding nodes when the correct root dimensions are still unknown

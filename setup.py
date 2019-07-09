@@ -10,7 +10,7 @@ setup(
     url='https://github.com/numirias/qtile-plasma',
     license='MIT',
     python_requires='>=3',
-    install_requires=['xcffib', 'qtile'],
+    install_requires=['xcffib>=0.5.0', 'qtile>=0.14.2'],
     classifiers=[
         'Development Status :: 4 - Beta',
         'License :: OSI Approved :: MIT License',

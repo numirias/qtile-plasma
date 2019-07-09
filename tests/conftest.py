@@ -1,6 +1,14 @@
+from pathlib import Path
+import sys
+
 from pytest import fixture
 
 from plasma.node import Node
+
+# We borrow Qtile's testing framework. That's not elegant but the best option.
+sys.path.insert(0, str(Path(__file__).parents[1] / 'lib'))  # noqa: E402
+from qtile.test.conftest import pytest_addoption
+
 
 
 Node.min_size_default = 10

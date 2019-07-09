@@ -1,0 +1,8 @@
+[run]
+branch = True
+source = plasma
+
+[paths]
+source =
+   plasma
+   .tox/*/lib/python*/site-packages/plasma
