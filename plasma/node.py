@@ -557,7 +557,7 @@ class Node:
         try:
             parent, idx, sizes, fixed, flip = restorables[node.payload]
         except KeyError:
-            raise NotRestorableError()
+            raise NotRestorableError()  # pylint: disable=raise-missing-from
         if parent not in self.root:
             # Don't try to restore if parent is not part of the tree anymore
             raise NotRestorableError()

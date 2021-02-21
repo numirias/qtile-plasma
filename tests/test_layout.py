@@ -10,8 +10,9 @@ from plasma.node import Node
 sys.path.insert(0, str(Path(__file__).parents[1] / 'lib'))  # noqa: E402
 from qtile.libqtile import config
 from qtile.libqtile.layout import Floating
-from qtile.test.conftest import no_xinerama, qtile, xephyr, xvfb  # noqa: F401
+from qtile.test.conftest import manager as qtile, no_xinerama, xephyr, xvfb  # noqa: F401
 from qtile.test.layouts.layout_utils import assert_focused
+from qtile.libqtile.confreader import Config as _Config
 
 
 @fixture
@@ -25,7 +26,7 @@ def grid(qtile):
     qtile.c.layout.mode_vertical()
     qtile.test_window('d')
 
-class Config:
+class Config(_Config):
 
     auto_fullscreen = True
     main = None

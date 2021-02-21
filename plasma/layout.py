@@ -72,11 +72,11 @@ class Plasma(Layout):
     def remove(self, client):
         self.root.find_payload(client).remove()
 
-    def configure(self, client, screen):
-        self.root.x = screen.x
-        self.root.y = screen.y
-        self.root.width = screen.width
-        self.root.height = screen.height
+    def configure(self, client, screen_rect):
+        self.root.x = screen_rect.x
+        self.root.y = screen_rect.y
+        self.root.width = screen_rect.width
+        self.root.height = screen_rect.height
         node = self.root.find_payload(client)
         border_width = self.border_width_single if self.root.tree == [node] \
             else self.border_width
@@ -90,7 +90,7 @@ class Plasma(Layout):
             width-2*border_width,
             height-2*border_width,
             border_width,
-            self.group.qtile.color_pixel(border_color),
+            border_color,
             margin=self.margin,
         )
         # Always keep tiles below floating windows
