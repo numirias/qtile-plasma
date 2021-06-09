@@ -40,7 +40,8 @@ layouts = [
         border_focus_fixed='#00e8dc',
         border_width=1,
         border_width_single=0,
-        margin=0
+        margin=0,
+        margin_single=0
     ),
     ...
 ]
