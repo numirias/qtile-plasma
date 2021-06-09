@@ -26,6 +26,7 @@ class Plasma(Layout):
         ('border_width', 1, 'Border width'),
         ('border_width_single', 0, 'Border width for single window'),
         ('margin', 0, 'Layout margin'),
+        ('margin_single', 0, 'Layout margin for single window'),
     ]
     # If windows are added before configure() was called, the screen size is
     # still unknown, so we need to set some arbitrary initial root dimensions
@@ -80,6 +81,8 @@ class Plasma(Layout):
         node = self.root.find_payload(client)
         border_width = self.border_width_single if self.root.tree == [node] \
             else self.border_width
+        margin = self.margin_single if self.root.tree == [node] \
+            else self.margin
         border_color = getattr(self, 'border_' +
                                ('focus' if client.has_focus else 'normal') +
                                ('' if node.flexible else '_fixed'))
@@ -91,7 +94,7 @@ class Plasma(Layout):
             height-2*border_width,
             border_width,
             border_color,
-            margin=self.margin,
+            margin=margin,
         )
         # Always keep tiles below floating windows
         client.window.configure(stackmode=StackMode.Below)
