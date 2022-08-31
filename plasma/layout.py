@@ -60,6 +60,13 @@ class Plasma(Layout):
         clone.add_mode = None
         return clone
 
+    def get_windows(self):
+        clients = []
+        for leaf in self.root.all_leafs:
+            if leaf.payload is not None:
+                clients.append(leaf.payload)
+        return clients
+
     def add(self, client):
         node = self.root if self.focused_node is None else self.focused_node
         new = Node(client)
